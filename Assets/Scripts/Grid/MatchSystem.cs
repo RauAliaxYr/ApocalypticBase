@@ -1,7 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MatchSystem : MonoBehaviour
+    public class MatchSystem : MonoBehaviour
     {
         [Header("Match Settings")]
         public int minMatchCount = 3;
@@ -13,8 +14,24 @@ public class MatchSystem : MonoBehaviour
         
         public void Initialize(GridController controller)
         {
+            Debug.Log("MatchSystem.Initialize() called");
+            
+            if (controller == null)
+            {
+                Debug.LogError("MatchSystem: GridController is null!");
+                return;
+            }
+            
             gridController = controller;
             boardState = controller.boardState;
+            
+            if (boardState == null)
+            {
+                Debug.LogError("MatchSystem: BoardState is null!");
+                return;
+            }
+            
+            Debug.Log($"MatchSystem: Initialized with grid {boardState.width}x{boardState.height}");
         }
         
         public void CheckMatches()
@@ -24,7 +41,7 @@ public class MatchSystem : MonoBehaviour
             StartCoroutine(CheckMatchesCoroutine());
         }
         
-        private System.Collections.IEnumerator CheckMatchesCoroutine()
+        private IEnumerator CheckMatchesCoroutine()
         {
             isCheckingMatches = true;
             
@@ -189,53 +206,36 @@ public class MatchSystem : MonoBehaviour
         
         private string GetTileTypeAt(Vector2Int position)
         {
-            // Check for tower first
-            if (boardState.towers.ContainsKey(position))
-            {
-                return boardState.towers[position].towerId;
-            }
-            
-            // Check for resource
-            if (boardState.resources.ContainsKey(position))
-            {
-                return boardState.resources[position].resourceId;
-            }
-            
-            return "";
+            var cell = boardState.GetTile(position);
+            return cell != null ? cell.tileId : "";
         }
         
         private void ProcessMatch(MatchData match)
         {
             // Publish match event
-            EventBus.Instance.Publish(new MatchFoundEvent
+            if (EventBus.Instance != null)
             {
-                MatchedPositions = match.positions,
-                TileType = GetTileDefinition(match.tileType),
-                MatchCount = match.matchCount
-            });
-            
-            // Process match result based on tile type
-            TileDefinition tileDef = GetTileDefinition(match.tileType);
-            if (tileDef != null)
-            {
-                switch (tileDef.matchResult)
+                EventBus.Instance.Publish(new MatchFoundEvent
                 {
-                    case MatchResult.BuildTower:
-                        ProcessResourceMatch(match);
-                        break;
-                        
-                    case MatchResult.UpgradeTower:
-                        ProcessTowerMatch(match);
-                        break;
-                        
-                    case MatchResult.BonusEffect:
-                        ProcessBonusMatch(match);
-                        break;
-                        
-                    case MatchResult.ResourceGain:
-                        ProcessResourceGain(match);
-                        break;
-                }
+                    MatchedPositions = match.positions,
+                    TileId = match.tileType,
+                    MatchCount = match.matchCount
+                });
+            }
+            
+            // New rules:
+            // - 3 ресурсов одного типа -> создаём башню producedTower в центре матча
+            // - 3 башни одного уровня и типа -> создаём башню nextLevel в центре
+            var anyPos = match.positions[0];
+            var cell = boardState.GetTile(anyPos);
+            if (cell == null) { RemoveMatchedTiles(match.positions); return; }
+            if (cell.category == TileCategory.Resource)
+            {
+                ProcessResourceMatch(match);
+            }
+            else if (cell.category == TileCategory.Tower)
+            {
+                ProcessTowerMatch(match);
             }
             
             // Remove matched tiles
@@ -247,15 +247,14 @@ public class MatchSystem : MonoBehaviour
             // 3 одинаковых ресурса = постройка башни
             Vector2Int centerPosition = GetCenterPosition(match.positions);
             
-            if (!boardState.IsValidPosition(centerPosition) || 
-                boardState.GetTile(centerPosition).hasTower)
+            if (!boardState.IsValidPosition(centerPosition) || boardState.GetTile(centerPosition) != null)
                 return;
                 
-            // Create tower at center position
-            TowerDefinition towerDef = GetTowerDefinitionForResource(match.tileType);
-            if (towerDef != null)
+            // Create tower at center position from resource tile definition mapping
+            TileDefinition resDef = GetTileDefinition(match.tileType);
+            if (resDef != null && resDef.producedTower != null)
             {
-                gridController.CreateTower(centerPosition, towerDef);
+                gridController.CreateTower(centerPosition, resDef.producedTower);
             }
         }
         
@@ -264,11 +263,11 @@ public class MatchSystem : MonoBehaviour
             // 3 одинаковых башни = улучшенная башня
             Vector2Int centerPosition = GetCenterPosition(match.positions);
             
-            if (!boardState.towers.ContainsKey(centerPosition))
+            var cell = boardState.GetTile(centerPosition);
+            if (cell == null || cell.category != TileCategory.Tower)
                 return;
-                
-            TowerData currentTower = boardState.towers[centerPosition];
-            TowerDefinition nextLevelTower = GetNextLevelTower(currentTower.towerId);
+            
+            TowerDefinition nextLevelTower = GetNextLevelTower(cell.tileId);
             
             if (nextLevelTower != null)
             {
@@ -277,25 +276,34 @@ public class MatchSystem : MonoBehaviour
                 gridController.CreateTower(centerPosition, nextLevelTower);
                 
                 // Publish upgrade event
-                EventBus.Instance.Publish(new TowerUpgradedEvent
+                if (EventBus.Instance != null)
                 {
-                    Position = centerPosition,
-                    OldTower = GetTowerDefinition(currentTower.towerId),
-                    NewTower = nextLevelTower
-                });
+                    EventBus.Instance.Publish(new TowerUpgradedEvent
+                    {
+                        Position = centerPosition,
+                        OldTower = GetTowerDefinition(cell.tileId),
+                        NewTower = nextLevelTower
+                    });
+                }
             }
         }
         
         private void ProcessBonusMatch(MatchData match)
         {
             // Bonus effect - could be extra gold, special power, etc.
-            GameManager.Instance.EconomyManager.AddGold(match.matchCount * 10);
+            if (GameManager.Instance != null && GameManager.Instance.EconomyManager != null)
+            {
+                GameManager.Instance.EconomyManager.AddGold(match.matchCount * 10);
+            }
         }
         
         private void ProcessResourceGain(MatchData match)
         {
             // Resource gain - could be extra resources, etc.
-            GameManager.Instance.EconomyManager.AddGold(match.matchCount * 5);
+            if (GameManager.Instance != null && GameManager.Instance.EconomyManager != null)
+            {
+                GameManager.Instance.EconomyManager.AddGold(match.matchCount * 5);
+            }
         }
         
         private void RemoveMatchedTiles(List<Vector2Int> positions)
@@ -307,11 +315,11 @@ public class MatchSystem : MonoBehaviour
                 boardState.RemoveResource(position);
                 
                 // Remove visual objects
-                GameObject tileObj = gridController.GetTileObjectAt(position);
-                if (tileObj != null)
-                {
-                    Destroy(tileObj);
-                }
+                // GameObject tileObj = gridController.GetTileObjectAt(position);
+                // if (tileObj != null)
+                // {
+                //     Destroy(tileObj);
+                // }
             }
         }
         
@@ -338,13 +346,6 @@ public class MatchSystem : MonoBehaviour
         private TowerDefinition GetTowerDefinition(string towerId)
         {
             // This would load from ScriptableObjects
-            // For now, return null
-            return null;
-        }
-        
-        private TowerDefinition GetTowerDefinitionForResource(string resourceId)
-        {
-            // This would map resources to towers
             // For now, return null
             return null;
         }

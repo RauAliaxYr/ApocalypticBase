@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
+  m_Name: ElectroSO 4
+  m_EditorClassIdentifier: 
+  id: 1
+  displayName: Electronic
+  sprite: {fileID: 2997810815091220991, guid: 75f24f3e776083842a67dfa878f3730d, type: 3}
+  category: 0
+  canBeSwapped: 1
+  producedTower: {fileID: 11400000, guid: d8e31e6679d2baa4cb33cfe42c8c7932, type: 2}

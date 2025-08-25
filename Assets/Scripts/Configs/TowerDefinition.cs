@@ -8,7 +8,6 @@ using UnityEngine;
         [Header("Basic Info")]
         public string id;
         public string displayName;
-        public Sprite sprite;
         public GameObject towerPrefab;
         
         [Header("Level")]
@@ -16,10 +15,8 @@ using UnityEngine;
         public int maxLevel = 3;
         
         [Header("Combat Stats")]
-        public int damage = 10;
+        public int damage = 1;
         public float attackInterval = 1f;
-        public float range = 3f;
-        public int cost = 100;
         
         [Header("Attack Pattern")]
         public AttackPattern attackPattern;
@@ -27,7 +24,6 @@ using UnityEngine;
         
         [Header("Upgrade")]
         public TowerDefinition nextLevelTower;
-        public int upgradeCost;
     }
     
     [System.Serializable]

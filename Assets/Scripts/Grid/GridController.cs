@@ -7,13 +7,13 @@ public class GridController : MonoBehaviour
         [Header("Grid Settings")]
         public int gridWidth = 8;
         public int gridHeight = 8;
-        public float cellSize = 1f;
+        public float cellSize = 1f; // Legacy - kept for compatibility
+        public float cellWidth = 1f; // Width of each cell
+        public float cellHeight = 1f; // Height of each cell
         public Vector3 gridOrigin = Vector3.zero;
         
         [Header("Prefabs")]
-        public GameObject tilePrefab;
-        public GameObject resourcePrefab;
-        public GameObject towerPrefab;
+        public GameObject[] allowedResourcePrefabs;
         
         [Header("References")]
         public Transform gridContainer;
@@ -22,24 +22,51 @@ public class GridController : MonoBehaviour
         [Header("State")]
         public BoardState boardState;
         public bool isGameActive = false;
+        public bool isGridPositioned = false; // New property to track if grid has been positioned
         
-        private Dictionary<Vector2Int, GameObject> tileObjects = new Dictionary<Vector2Int, GameObject>();
-        private Dictionary<Vector2Int, GameObject> resourceObjects = new Dictionary<Vector2Int, GameObject>();
-        private Dictionary<Vector2Int, GameObject> towerObjects = new Dictionary<Vector2Int, GameObject>();
-        
-        private Vector2Int selectedTile = Vector2Int.one * -1;
-        private bool isDragging = false;
+        private Dictionary<Vector2Int, TileBase> gridObjects = new Dictionary<Vector2Int, TileBase>();
         
         private void Awake()
         {
-            boardState = new BoardState(gridWidth, gridHeight);
+            // BoardState will be created in Initialize() when Unity has set all field values
         }
         
         public void Initialize()
         {
-            CreateGrid();
-            PopulateGrid();
+            // Create BoardState here when gridWidth and gridHeight are properly set
+            boardState = new BoardState(gridWidth, gridHeight);
+            
+            // Check if required components are set
+            if (allowedResourcePrefabs == null || allowedResourcePrefabs.Length == 0)
+            {
+                Debug.LogError("GridController: allowedResourcePrefabs is not set!");
+                return;
+            }
+            
+            if (gridContainer == null)
+            {
+                Debug.LogError("GridController: gridContainer is not set!");
+                return;
+            }
+            
+            if (matchSystem == null)
+            {
+                Debug.LogError("GridController: matchSystem is not set!");
+                return;
+            }
+            
+            // Don't create grid here - wait for layout to be applied first
+            // Grid will be created when ApplyLayoutFromAnchors is called
             matchSystem.Initialize(this);
+        }
+        
+        // New method to create the grid after layout is applied
+        public void CreateGridAfterLayout()
+        {
+            if (boardState == null) return;
+            
+            // create visual cells not used now; just fill resources
+            FillEmptyCells();
         }
         
         public void StartGame()
@@ -47,47 +74,20 @@ public class GridController : MonoBehaviour
             isGameActive = true;
         }
         
-        private void CreateGrid()
+        public void FillEmptyCells()
         {
             for (int x = 0; x < gridWidth; x++)
             {
                 for (int y = 0; y < gridHeight; y++)
                 {
-                    Vector3 worldPosition = GridToWorldPosition(new Vector2Int(x, y));
-                    GameObject tile = Instantiate(tilePrefab, worldPosition, Quaternion.identity, gridContainer);
-                    tile.name = $"Tile_{x}_{y}";
-                    
-                    tileObjects[new Vector2Int(x, y)] = tile;
-                    
-                    // Add tile component
-                    Tile tileComponent = tile.GetComponent<Tile>();
-                    if (tileComponent != null)
+                    Vector2Int p = new Vector2Int(x, y);
+                    if (!gridObjects.ContainsKey(p))
                     {
-                        tileComponent.Initialize(new Vector2Int(x, y), this);
-                    }
-                }
-            }
-        }
-        
-        private void PopulateGrid()
-        {
-            // Populate with initial resources and towers
-            for (int x = 0; x < gridWidth; x++)
-            {
-                for (int y = 0; y < gridHeight; y++)
-                {
-                    Vector2Int position = new Vector2Int(x, y);
-                    
-                    // Random resource placement
-                    if (Random.Range(0f, 1f) < 0.3f)
-                    {
-                        CreateResource(position, GetRandomResourceDefinition());
-                    }
-                    
-                    // Random tower placement
-                    if (Random.Range(0f, 1f) < 0.1f)
-                    {
-                        CreateTower(position, GetRandomTowerDefinition());
+                        var prefab = GetRandomResourcePrefab();
+                        if (prefab != null)
+                        {
+                            CreateResourceFromPrefab(p, prefab);
+                        }
                     }
                 }
             }
@@ -96,8 +96,8 @@ public class GridController : MonoBehaviour
         public Vector3 GridToWorldPosition(Vector2Int gridPosition)
         {
             return gridOrigin + new Vector3(
-                gridPosition.x * cellSize,
-                gridPosition.y * cellSize,
+                gridPosition.x * cellWidth,
+                gridPosition.y * cellHeight,
                 0f
             );
         }
@@ -106,165 +106,104 @@ public class GridController : MonoBehaviour
         {
             Vector3 localPosition = worldPosition - gridOrigin;
             return new Vector2Int(
-                Mathf.RoundToInt(localPosition.x / cellSize),
-                Mathf.RoundToInt(localPosition.y / cellSize)
+                Mathf.RoundToInt(localPosition.x / cellWidth),
+                Mathf.RoundToInt(localPosition.y / cellHeight)
             );
         }
         
-        public void CreateResource(Vector2Int position, TileDefinition resourceDef)
+        public void CreateResourceFromPrefab(Vector2Int position, GameObject resourcePrefabOverride)
         {
-            if (!boardState.IsValidPosition(position) || boardState.GetTile(position).hasResource)
+            if (!boardState.IsValidPosition(position) || boardState.GetTile(position) != null)
+            {
+                Debug.LogWarning($"GridController: Cannot create resource at {position} - invalid position or already occupied");
                 return;
-                
+            }
+
             Vector3 worldPosition = GridToWorldPosition(position);
-            GameObject resource = Instantiate(resourcePrefab, worldPosition, Quaternion.identity, gridContainer);
-            
+            GameObject resource = Instantiate(resourcePrefabOverride, worldPosition, Quaternion.identity, gridContainer);
+
             Resource resourceComponent = resource.GetComponent<Resource>();
             if (resourceComponent != null)
             {
-                resourceComponent.Initialize(position, resourceDef, this);
+                // Use definition from prefab component
+                TileDefinition def = resourceComponent.definition;
+                resourceComponent.Initialize(position, this);
+                
+                // Set definition after initialize
+                if (def != null)
+                {
+                    resourceComponent.SetDefinition(def);
+                    boardState.AddResource(position, def.id);
+                }
+
+                gridObjects[position] = resourceComponent;
             }
-            
-            resourceObjects[position] = resource;
-            
-            ResourceData resourceData = new ResourceData
+            else
             {
-                resourceId = resourceDef.id,
-                amount = resourceDef.baseValue
-            };
-            
-            boardState.AddResource(position, resourceData);
+                Debug.LogError($"GridController: Resource prefab {resourcePrefabOverride.name} has no Resource component!");
+                Destroy(resource);
+            }
         }
         
         public void CreateTower(Vector2Int position, TowerDefinition towerDef)
         {
-            if (!boardState.IsValidPosition(position) || boardState.GetTile(position).hasTower)
+            if (!boardState.IsValidPosition(position) || boardState.GetTile(position) != null)
                 return;
                 
             Vector3 worldPosition = GridToWorldPosition(position);
-            GameObject tower = Instantiate(towerPrefab, worldPosition, Quaternion.identity, gridContainer);
+            GameObject prefab = (towerDef != null) ? towerDef.towerPrefab : null;
+            if (prefab == null) return;
+            GameObject tower = Instantiate(prefab, worldPosition, Quaternion.identity, gridContainer);
             
             Tower towerComponent = tower.GetComponent<Tower>();
             if (towerComponent != null)
             {
-                towerComponent.Initialize(position, towerDef, this);
+                towerComponent.Initialize(position, this);
+                towerComponent.ApplyDefinition(towerDef);
             }
             
-            towerObjects[position] = tower;
-            
-            TowerData towerData = new TowerData
-            {
-                towerId = towerDef.id,
-                level = towerDef.level
-            };
-            
-            boardState.AddTower(position, towerData);
+            gridObjects[position] = towerComponent;
+            boardState.AddTower(position, towerDef.id, towerDef.level);
         }
         
-        public bool TrySwapTiles(Vector2Int from, Vector2Int to)
-        {
-            if (!boardState.IsValidPosition(from) || !boardState.IsValidPosition(to))
-                return false;
-                
-            if (from == to)
-                return false;
-                
-            // Check if tiles can be swapped
-            if (!CanSwapTiles(from, to))
-                return false;
-                
-            // Perform swap
-            SwapTiles(from, to);
-            
-            // Check for matches
-            matchSystem.CheckMatches();
-            
-            // Publish event
-            EventBus.Instance.Publish(new TileSwappedEvent
-            {
-                FromPosition = from,
-                ToPosition = to,
-                FromTile = GetTileAt(from),
-                ToTile = GetTileAt(to)
-            });
-            
-            return true;
-        }
+        // Swapping and matching handled by external systems
         
-        private bool CanSwapTiles(Vector2Int from, Vector2Int to)
-        {
-            // Check if both positions have swappable tiles
-            Tile fromTile = GetTileAt(from);
-            Tile toTile = GetTileAt(to);
-            
-            if (fromTile == null || toTile == null)
-                return false;
-                
-            if (!fromTile.CanBeSwapped || !toTile.CanBeSwapped)
-                return false;
-                
-            return true;
-        }
-        
-        private void SwapTiles(Vector2Int from, Vector2Int to)
-        {
-            // Swap tile objects
-            GameObject fromObj = GetTileObjectAt(from);
-            GameObject toObj = GetTileObjectAt(to);
-            
-            if (fromObj != null && toObj != null)
-            {
-                Vector3 fromPos = fromObj.transform.position;
-                Vector3 toPos = toObj.transform.position;
-                
-                fromObj.transform.position = toPos;
-                toObj.transform.position = fromPos;
-                
-                // Update tile positions
-                Tile fromTile = fromObj.GetComponent<Tile>();
-                Tile toTile = toObj.GetComponent<Tile>();
-                
-                if (fromTile != null) fromTile.UpdatePosition(to);
-                if (toTile != null) toTile.UpdatePosition(from);
-            }
-        }
-        
-        public Tile GetTileAt(Vector2Int position)
-        {
-            if (tileObjects.ContainsKey(position))
-            {
-                return tileObjects[position].GetComponent<Tile>();
-            }
-            return null;
-        }
-        
-        public GameObject GetTileObjectAt(Vector2Int position)
-        {
-            if (tileObjects.ContainsKey(position))
-            {
-                return tileObjects[position];
-            }
-            return null;
-        }
+        // Base tile accessors removed; using resource/tower maps
         
         public bool IsPositionOccupied(Vector2Int position)
         {
-            return boardState.GetTile(position).hasTower || 
-                   boardState.GetTile(position).hasResource;
+            return gridObjects.ContainsKey(position);
         }
         
-        private TileDefinition GetRandomResourceDefinition()
+        public TileBase GetTileAt(Vector2Int position)
         {
-            // This would be populated from ScriptableObjects
-            // For now, return a default
-            return ScriptableObject.CreateInstance<TileDefinition>();
+            if (gridObjects.ContainsKey(position))
+            {
+                return gridObjects[position];
+            }
+            return null;
         }
         
-        private TowerDefinition GetRandomTowerDefinition()
+        public void RemoveTile(Vector2Int position)
         {
-            // This would be populated from ScriptableObjects
-            // For now, return a default
-            return ScriptableObject.CreateInstance<TowerDefinition>();
+            if (gridObjects.ContainsKey(position))
+            {
+                Destroy(gridObjects[position].gameObject);
+                gridObjects.Remove(position);
+                // Remove from boardState as well
+                boardState.RemoveResource(position); // Will remove if it's a resource
+                boardState.RemoveTower(position);    // Will remove if it's a tower
+            }
+        }
+        
+        private GameObject GetRandomResourcePrefab()
+        {
+            if (allowedResourcePrefabs != null && allowedResourcePrefabs.Length > 0)
+            {
+                int idx = Random.Range(0, allowedResourcePrefabs.Length);
+                return allowedResourcePrefabs[idx];
+            }
+            return null;
         }
 
         // Layout API
@@ -286,41 +225,32 @@ public class GridController : MonoBehaviour
                 return;
             }
 
-            float newCellSize = Mathf.Min(rectWidth / gridWidth, rectHeight / gridHeight);
+            // Calculate separate cell dimensions to fill the entire rectangle
+            float newCellWidth = rectWidth / gridWidth;
+            float newCellHeight = rectHeight / gridHeight;
+            
+            // Keep cellSize updated for compatibility
+            cellSize = Mathf.Min(newCellWidth, newCellHeight);
 
             // bottom-left corner from given anchors
             Vector3 bottomLeft = new Vector3(topLeftPos.x, bottomRightPos.y, topLeftPos.z);
-            Vector3 newOrigin = bottomLeft + new Vector3(newCellSize * 0.5f, newCellSize * 0.5f, 0f);
+            Vector3 newOrigin = bottomLeft + new Vector3(newCellWidth * 0.5f, newCellHeight * 0.5f, 0f);
 
-            cellSize = newCellSize;
+            cellWidth = newCellWidth;
+            cellHeight = newCellHeight;
             gridOrigin = newOrigin;
 
-            RepositionAll();
+            // Create grid immediately after layout is applied
+            CreateGridAfterLayout();
+            
+            // Mark grid as positioned
+            isGridPositioned = true;
         }
 
         public void RepositionAll()
         {
-            // Reposition base tiles
-            foreach (var kv in tileObjects)
-            {
-                Tile tile = kv.Value != null ? kv.Value.GetComponent<Tile>() : null;
-                if (tile != null)
-                {
-                    tile.UpdatePosition(tile.gridPosition);
-                }
-            }
-
-            // Reposition resources
-            foreach (var kv in resourceObjects)
-            {
-                if (kv.Value != null)
-                {
-                    kv.Value.transform.position = GridToWorldPosition(kv.Key);
-                }
-            }
-
-            // Reposition towers
-            foreach (var kv in towerObjects)
+            // Reposition grid objects
+            foreach (var kv in gridObjects)
             {
                 if (kv.Value != null)
                 {
@@ -329,44 +259,5 @@ public class GridController : MonoBehaviour
             }
         }
         
-        public void OnTileClicked(Vector2Int position)
-        {
-            if (!isGameActive) return;
-            
-            if (selectedTile == Vector2Int.one * -1)
-            {
-                // First tile selected
-                selectedTile = position;
-                HighlightTile(position, true);
-            }
-            else
-            {
-                // Second tile selected - try to swap
-                if (selectedTile != position)
-                {
-                    if (TrySwapTiles(selectedTile, position))
-                    {
-                        // Swap successful
-                        GameManager.Instance.EconomyManager.UseSwap();
-                    }
-                }
-                
-                // Clear selection
-                HighlightTile(selectedTile, false);
-                selectedTile = Vector2Int.one * -1;
-            }
-        }
-        
-        private void HighlightTile(Vector2Int position, bool highlight)
-        {
-            if (tileObjects.ContainsKey(position))
-            {
-                // Add highlighting logic here
-                SpriteRenderer renderer = tileObjects[position].GetComponent<SpriteRenderer>();
-                if (renderer != null)
-                {
-                    renderer.color = highlight ? Color.yellow : Color.white;
-                }
-            }
-        }
+        // Input/highlighting are handled elsewhere
     }

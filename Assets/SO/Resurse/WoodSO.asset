@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
+  m_Name: WoodSO
+  m_EditorClassIdentifier: 
+  id: 1
+  displayName: Wood
+  sprite: {fileID: -2067898546876541913, guid: e1327e2eeda299541839540a121cbcc0, type: 3}
+  category: 0
+  canBeSwapped: 1
+  producedTower: {fileID: 11400000, guid: 3185e8c49411cc74e9b70399a41b5cbb, type: 2}

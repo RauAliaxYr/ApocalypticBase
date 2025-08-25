@@ -36,10 +36,13 @@ public class GameManager : MonoBehaviour
         
         private void InitializeGame()
         {
+            Debug.Log("GameManager.InitializeGame() called");
+            
             // Ensure data objects exist
             if (ProgressState == null)
             {
                 ProgressState = new ProgressState();
+                Debug.Log("GameManager: Created new ProgressState");
             }
             
             // Initialize save system then load
@@ -47,12 +50,45 @@ public class GameManager : MonoBehaviour
             {
                 SaveLoadManager.Initialize();
                 SaveLoadManager.LoadProgress();
+                Debug.Log("GameManager: SaveLoadManager initialized");
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: SaveLoadManager is null");
             }
             
             // Initialize all systems
-            if (GridController != null) GridController.Initialize();
-            if (WaveManager != null) WaveManager.Initialize();
-            if (EconomyManager != null) EconomyManager.Initialize();
+            if (GridController != null)
+            {
+                Debug.Log("GameManager: Initializing GridController");
+                GridController.Initialize();
+            }
+            else
+            {
+                Debug.LogError("GameManager: GridController is null!");
+            }
+            
+            if (WaveManager != null)
+            {
+                Debug.Log("GameManager: Initializing WaveManager");
+                WaveManager.Initialize();
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: WaveManager is null");
+            }
+            
+            if (EconomyManager != null)
+            {
+                Debug.Log("GameManager: Initializing EconomyManager");
+                EconomyManager.Initialize();
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: EconomyManager is null");
+            }
+            
+            Debug.Log("GameManager.InitializeGame() completed");
         }
         
         public void StartGame()

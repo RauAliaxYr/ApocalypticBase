@@ -1,8 +1,8 @@
 using UnityEngine;
 
 
-    [CreateAssetMenu(fileName = "New Tile", menuName = "Apocalyptic Base/Configs/Tile Definition")]
-    public class TileDefinition : ScriptableObject
+[CreateAssetMenu(fileName = "New Tile", menuName = "Apocalyptic Base/Configs/Tile Definition")]
+public class TileDefinition : ScriptableObject
     {
         [Header("Basic Info")]
         public string id;
@@ -11,30 +11,16 @@ using UnityEngine;
         
         [Header("Category")]
         public TileCategory category;
-        
-        [Header("Match Result")]
-        public MatchResult matchResult;
-        
+                
         [Header("Properties")]
-        public int baseValue = 1;
-        public bool isWalkable = true;
         public bool canBeSwapped = true;
+
+        [Header("Resource → Tower Mapping")]
+        public TowerDefinition producedTower; // если это ресурс, какую башню создаём при матч-3
     }
     
     public enum TileCategory
     {
         Resource,   // Дерево, камень, металл
         Tower,      // Башня
-        Bonus,      // Бонусные тайлы
-        Obstacle    // Препятствия
     }
-    
-    public enum MatchResult
-    {
-        None,           // Ничего не происходит
-        BuildTower,     // Строится башня
-        UpgradeTower,   // Улучшается башня
-        BonusEffect,    // Бонусный эффект
-        ResourceGain    // Получение ресурсов
-    }
-

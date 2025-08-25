@@ -71,14 +71,14 @@ public class EventBus : MonoBehaviour
     {
         public Vector2Int FromPosition;
         public Vector2Int ToPosition;
-        public Tile FromTile;
-        public Tile ToTile;
+        public TileBase FromTile;
+        public TileBase ToTile;
     }
     
     public class MatchFoundEvent
     {
         public List<Vector2Int> MatchedPositions;
-        public TileDefinition TileType;
+        public string TileId;
         public int MatchCount;
     }
     
