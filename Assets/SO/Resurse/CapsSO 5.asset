@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
+  m_Name: CapsSO 5
+  m_EditorClassIdentifier: 
+  category: 0
+  canBeSwapped: 1
+  resourceId: 6
+  towerIds:
+  - 16
+  - 26
+  - 36
+  maxTowerLevel: 3
+  resourceSprite: {fileID: -4678958772718428666, guid: 9caa96b61b11f944da281f370aed5f47, type: 3}
+  towerLevelSprites:
+  - {fileID: -8221454380195978166, guid: 3feed8a3534cde94b8f7fe0188407338, type: 3}
+  - {fileID: 4957506932908335711, guid: 3feed8a3534cde94b8f7fe0188407338, type: 3}
+  - {fileID: 4609941887794321694, guid: 3feed8a3534cde94b8f7fe0188407338, type: 3}
