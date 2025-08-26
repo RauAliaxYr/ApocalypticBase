@@ -12,9 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
   m_Name: ToxicSO
   m_EditorClassIdentifier: 
-  id: 1
-  displayName: Toxic
-  sprite: {fileID: 21300000, guid: 25f00845491931b458c9c357455e43a7, type: 3}
   category: 0
   canBeSwapped: 1
-  producedTower: {fileID: 11400000, guid: 0b577291f996d524e8a56cb0262a6783, type: 2}
+  resourceId: 4
+  towerIds:
+  - 14
+  - 24
+  - 34
+  maxTowerLevel: 3
+  resourceSprite: {fileID: 21300000, guid: 25f00845491931b458c9c357455e43a7, type: 3}
+  towerLevelSprites:
+  - {fileID: -5897742889202317434, guid: ea2d1850bf3f1c44698f4287d17d2883, type: 3}
+  - {fileID: -5348671279330042939, guid: ea2d1850bf3f1c44698f4287d17d2883, type: 3}
+  - {fileID: -371085767484198310, guid: ea2d1850bf3f1c44698f4287d17d2883, type: 3}

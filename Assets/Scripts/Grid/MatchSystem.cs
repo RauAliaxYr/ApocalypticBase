@@ -8,6 +8,9 @@ using UnityEngine;
         public int minMatchCount = 3;
         public float matchCheckDelay = 0.1f;
         
+        private Dictionary<string, TileDefinition> tileIdToDef = new Dictionary<string, TileDefinition>();
+        private Dictionary<string, TowerDefinition> towerIdToDef = new Dictionary<string, TowerDefinition>();
+        
         [Header("Rewards")]
         // Stub: additional swaps granted for matches longer than 3
         public int swapPlus = 0;
@@ -33,10 +36,73 @@ using UnityEngine;
                 return;
             }
             
+            // Build definition caches
+            BuildDefinitionCaches();
+            
             // Subscribe to fill completion to trigger cascade checks
             if (gridController.gridFiller != null)
             {
                 gridController.gridFiller.OnFillCompleted += OnFillCompleted;
+            }
+        }
+
+        private void BuildDefinitionCaches()
+        {
+            tileIdToDef.Clear();
+            towerIdToDef.Clear();
+            
+            // From GridController resource prefabs
+            if (gridController != null && gridController.allowedResourcePrefabs != null)
+            {
+                foreach (var prefab in gridController.allowedResourcePrefabs)
+                {
+                    if (prefab == null) continue;
+                    var res = prefab.GetComponent<Resource>();
+                    if (res == null || res.definition == null) continue;
+                    var tileDef = res.definition;
+                    // Index by resourceId and towerIds
+                    if (!string.IsNullOrEmpty(tileDef.resourceId)) tileIdToDef[tileDef.resourceId] = tileDef;
+                    if (tileDef.towerIds != null)
+                    {
+                        foreach (var tid in tileDef.towerIds)
+                        {
+                            if (!string.IsNullOrEmpty(tid)) tileIdToDef[tid] = tileDef;
+                        }
+                    }
+                    // capture produced tower and its upgrade chain
+                    // (legacy noop)
+                }
+            }
+
+            // Fallback: load from Resources to ensure lookups work even if not linked via prefabs
+            if (tileIdToDef.Count == 0)
+            {
+                var loadedTiles = Resources.LoadAll<TileDefinition>("");
+                foreach (var def in loadedTiles)
+                {
+                    if (def == null) continue;
+                    if (!string.IsNullOrEmpty(def.resourceId)) tileIdToDef[def.resourceId] = def;
+                    if (def.towerIds != null)
+                    {
+                        foreach (var tid in def.towerIds)
+                        {
+                            if (!string.IsNullOrEmpty(tid)) tileIdToDef[tid] = def;
+                        }
+                    }
+                }
+            }
+            // towerIdToDef legacy cache is no longer needed for evolution-based logic
+        }
+
+        private void RegisterTowerChain(TowerDefinition def)
+        {
+            var visited = new HashSet<string>();
+            var current = def;
+            while (current != null && !string.IsNullOrEmpty(current.id) && !visited.Contains(current.id))
+            {
+                visited.Add(current.id);
+                towerIdToDef[current.id] = current;
+                current = current.nextLevelTower;
             }
         }
 
@@ -256,54 +322,78 @@ using UnityEngine;
                 ProcessTowerMatch(match);
             }
             
-            // Replace center with a tower if resource match; otherwise just remove matched
-            // Remove only the matched tiles; tiles above will fall via filler
-            RemoveMatchedTiles(match.positions);
+            // Tower should appear on spawnPos cell; exclude it from removal list
+            Vector2Int towerPos = (cell != null && cell.category == TileCategory.Resource) ? ChooseTowerSpawnPosition(match) : GetCenterPosition(match.positions);
+            
+            List<Vector2Int> toRemove = new List<Vector2Int>(match.positions);
+            toRemove.Remove(towerPos);
+            
+            RemoveMatchedTiles(toRemove);
+            
+            // Clear last swap markers after processing
+            gridController.ClearLastSwap();
         }
         
         private void ProcessResourceMatch(MatchData match)
         {
-            // 3 одинаковых ресурса = постройка башни
-            Vector2Int centerPosition = GetCenterPosition(match.positions);
-            
-            if (!boardState.IsValidPosition(centerPosition) || boardState.GetTile(centerPosition) != null)
-                return;
-                
-            // Create tower at center position from resource tile definition mapping
+            // 3 одинаковых ресурса = превращаем ресурсный префаб в башню 1 уровня
+            Vector2Int spawnPos = ChooseTowerSpawnPosition(match);
+            if (!boardState.IsValidPosition(spawnPos)) return;
+
             TileDefinition resDef = GetTileDefinition(match.tileType);
-            if (resDef != null && resDef.producedTower != null)
+            if (resDef == null) return;
+
+            // Get existing tile object at spawnPos
+            TileBase tile = gridController.GetTileAt(spawnPos);
+            if (tile == null) return;
+            
+            // Disable resource, enable tower on same prefab
+            Resource res = tile.GetComponent<Resource>();
+            Tower tower = tile.GetComponent<Tower>();
+            if (res != null) res.enabled = false;
+            if (tower != null)
             {
-                gridController.CreateTower(centerPosition, resDef.producedTower);
+                tower.enabled = true;
+                tower.ApplyEvolution(resDef, 1);
+                // Update board state id to tower level id if provided
+                string towerId = (resDef.towerIds != null && resDef.towerIds.Length > 0 && !string.IsNullOrEmpty(resDef.towerIds[0])) ? resDef.towerIds[0] : match.tileType + "_tower1";
+                boardState.RemoveResource(spawnPos);
+                boardState.AddTower(spawnPos, towerId, 1);
+                Debug.Log($"MatchSystem: Tower transformed at {spawnPos} to level 1 (id={towerId})");
             }
         }
         
         private void ProcessTowerMatch(MatchData match)
         {
-            // 3 одинаковых башни = улучшенная башня
+            // 3 одинаковых башни = повышаем уровень существующей башни
             Vector2Int centerPosition = GetCenterPosition(match.positions);
-            
             var cell = boardState.GetTile(centerPosition);
-            if (cell == null || cell.category != TileCategory.Tower)
-                return;
+            if (cell == null || cell.category != TileCategory.Tower) return;
+
+            TileBase tileObj = gridController.GetTileAt(centerPosition);
+            if (tileObj == null) return;
+            Tower tower = tileObj.GetComponent<Tower>();
+            if (tower == null || tower.evolution == null) return;
+
+            int nextLevel = Mathf.Min(cell.level + 1, tower.evolution.maxTowerLevel);
+            if (nextLevel == cell.level) return;
             
-            TowerDefinition nextLevelTower = GetNextLevelTower(cell.tileId);
+            tower.ApplyEvolution(tower.evolution, nextLevel);
+            // Update board state id to next level id
+            string nextId = (tower.evolution.towerIds != null && tower.evolution.towerIds.Length >= nextLevel) ? tower.evolution.towerIds[nextLevel - 1] : (cell.tileId + "_lvl" + nextLevel);
+            boardState.RemoveTower(centerPosition);
+            boardState.AddTower(centerPosition, nextId, nextLevel);
+            Debug.Log($"MatchSystem: Tower upgraded at {centerPosition} to level {nextLevel} (id={nextId})");
             
-            if (nextLevelTower != null)
+            // Publish upgrade event (optional)
+            if (EventBus.Instance != null)
             {
-                // Upgrade tower
-                boardState.RemoveTower(centerPosition);
-                gridController.CreateTower(centerPosition, nextLevelTower);
-                
-                // Publish upgrade event
-                if (EventBus.Instance != null)
+                EventBus.Instance.Publish(new TowerUpgradedEvent
                 {
-                    EventBus.Instance.Publish(new TowerUpgradedEvent
-                    {
-                        Position = centerPosition,
-                        OldTower = GetTowerDefinition(cell.tileId),
-                        NewTower = nextLevelTower
-                    });
-                }
+                    Position = centerPosition,
+                    OldTower = null,
+                    NewTower = null
+                });
             }
         }
         
@@ -338,6 +428,50 @@ using UnityEngine;
             // Let gravity collapse and fill
             gridController.FillPositionsAfterRemoval(positions);
         }
+
+        private Vector2Int ChooseTowerSpawnPosition(MatchData match)
+        {
+            // If the last swap produced this match, prefer the swapped tile that is in the match
+            if (gridController.lastSwapA.HasValue || gridController.lastSwapB.HasValue)
+            {
+                if (gridController.lastSwapA.HasValue && match.positions.Contains(gridController.lastSwapA.Value))
+                {
+                    return gridController.lastSwapA.Value;
+                }
+                if (gridController.lastSwapB.HasValue && match.positions.Contains(gridController.lastSwapB.Value))
+                {
+                    return gridController.lastSwapB.Value;
+                }
+            }
+            
+            // Otherwise pick center; if even-length, choose randomly between the two middle tiles along the match axis
+            return GetCenterPositionRandomIfEven(match.positions, match.isHorizontal);
+        }
+        
+        private Vector2Int GetCenterPositionRandomIfEven(List<Vector2Int> positions, bool isHorizontal)
+        {
+            if (positions == null || positions.Count == 0) return Vector2Int.zero;
+            
+            // Sort positions along axis
+            List<Vector2Int> sorted = new List<Vector2Int>(positions);
+            if (isHorizontal)
+                sorted.Sort((a, b) => a.x.CompareTo(b.x));
+            else
+                sorted.Sort((a, b) => a.y.CompareTo(b.y));
+            
+            int count = sorted.Count;
+            if (count % 2 == 1)
+            {
+                return sorted[count / 2];
+            }
+            else
+            {
+                // Even: pick randomly between the two middle ones
+                Vector2Int a = sorted[(count / 2) - 1];
+                Vector2Int b = sorted[count / 2];
+                return (Random.value < 0.5f) ? a : b;
+            }
+        }
         
         private Vector2Int GetCenterPosition(List<Vector2Int> positions)
         {
@@ -354,17 +488,19 @@ using UnityEngine;
         
         private TileDefinition GetTileDefinition(string tileId)
         {
-            // This would load from ScriptableObjects
-            // For now, return null
-            return null;
+            if (string.IsNullOrEmpty(tileId)) return null;
+            if (tileIdToDef.TryGetValue(tileId, out var def)) return def;
+            // As a last resort, try reloading once
+            BuildDefinitionCaches();
+            tileIdToDef.TryGetValue(tileId, out def);
+            if (def == null)
+            {
+                Debug.LogWarning($"MatchSystem: TileDefinition not found for id '{tileId}'.");
+            }
+            return def;
         }
         
-        private TowerDefinition GetTowerDefinition(string towerId)
-        {
-            // This would load from ScriptableObjects
-            // For now, return null
-            return null;
-        }
+        private TowerDefinition GetTowerDefinition(string towerId) { return null; }
         
         private TowerDefinition GetNextLevelTower(string currentTowerId)
         {

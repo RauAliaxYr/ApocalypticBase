@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8114765102455682397}
   - component: {fileID: 7342345988855597783}
   - component: {fileID: -8321090779664707536}
+  - component: {fileID: 2115785619189428977}
   m_Layer: 0
   m_Name: TilePrefabROCK
   m_TagString: Untagged
@@ -151,3 +152,21 @@ MonoBehaviour:
   definition: {fileID: 11400000, guid: 5c6e693282e738041819af4f7fd0603e, type: 2}
   spriteRenderer: {fileID: 8114765102455682397}
   resourceCollider: {fileID: 7342345988855597783}
+--- !u!114 &2115785619189428977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1292164713680807302}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cc5c92dd6a2e914c8521ee97bb5c8a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridPosition: {x: 0, y: 0}
+  evolution: {fileID: 11400000, guid: 5c6e693282e738041819af4f7fd0603e, type: 2}
+  level: 1
+  canBeSwapped: 1
+  spriteRenderer: {fileID: 8114765102455682397}
+  firePoint: {fileID: 5316707659927260322}

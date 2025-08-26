@@ -12,9 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
   m_Name: RockSO
   m_EditorClassIdentifier: 
-  id: 1
-  displayName: Rock
-  sprite: {fileID: 3452003437791708593, guid: e9bd37ffd543aca49b21eb888035e9b2, type: 3}
   category: 0
   canBeSwapped: 1
-  producedTower: {fileID: 11400000, guid: 52951f4838e90d043a56f1ddb4d6e606, type: 2}
+  resourceId: 3
+  towerIds:
+  - 13
+  - 23
+  - 33
+  maxTowerLevel: 3
+  resourceSprite: {fileID: 3452003437791708593, guid: e9bd37ffd543aca49b21eb888035e9b2, type: 3}
+  towerLevelSprites:
+  - {fileID: -3787654269009891836, guid: 0f69d7aad9afa194c918158d303a987d, type: 3}
+  - {fileID: 6829592278491043104, guid: 0f69d7aad9afa194c918158d303a987d, type: 3}
+  - {fileID: 1667349060590351841, guid: 0f69d7aad9afa194c918158d303a987d, type: 3}

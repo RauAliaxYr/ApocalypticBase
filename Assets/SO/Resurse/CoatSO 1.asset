@@ -12,9 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
   m_Name: CoatSO 1
   m_EditorClassIdentifier: 
-  id: 1
-  displayName: Coat
-  sprite: {fileID: -1122351356712548255, guid: 85457d8f381669747b3efc94ee04dbcd, type: 3}
   category: 0
   canBeSwapped: 1
-  producedTower: {fileID: 11400000, guid: b922df5e7196be04fb3167a9b2416300, type: 2}
+  resourceId: 1
+  towerIds:
+  - 11
+  - 21
+  - 31
+  maxTowerLevel: 3
+  resourceSprite: {fileID: -1122351356712548255, guid: 85457d8f381669747b3efc94ee04dbcd, type: 3}
+  towerLevelSprites:
+  - {fileID: 3523776636446203606, guid: 4ad4bd9d6184c9f48977fd7156dad209, type: 3}
+  - {fileID: 5129390426374826387, guid: 4ad4bd9d6184c9f48977fd7156dad209, type: 3}
+  - {fileID: 7982173371342994200, guid: 4ad4bd9d6184c9f48977fd7156dad209, type: 3}

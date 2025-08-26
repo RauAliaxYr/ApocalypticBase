@@ -12,9 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
   m_Name: WoodSO
   m_EditorClassIdentifier: 
-  id: 1
-  displayName: Wood
-  sprite: {fileID: -2067898546876541913, guid: e1327e2eeda299541839540a121cbcc0, type: 3}
   category: 0
   canBeSwapped: 1
-  producedTower: {fileID: 11400000, guid: 3185e8c49411cc74e9b70399a41b5cbb, type: 2}
+  resourceId: 5
+  towerIds:
+  - 15
+  - 25
+  - 35
+  maxTowerLevel: 3
+  resourceSprite: {fileID: -2067898546876541913, guid: e1327e2eeda299541839540a121cbcc0, type: 3}
+  towerLevelSprites:
+  - {fileID: 7960312634479672290, guid: e4321ef7fd8e8d9459dc494c879affe6, type: 3}
+  - {fileID: 7634157932077084606, guid: e4321ef7fd8e8d9459dc494c879affe6, type: 3}
+  - {fileID: 3533581491874071569, guid: e4321ef7fd8e8d9459dc494c879affe6, type: 3}

@@ -201,7 +201,11 @@ public class GridFiller : MonoBehaviour
                 // Register into board and grid maps
                 if (def != null)
                 {
-                    gridController.boardState.AddResource(pos, def.id);
+                    string resId = !string.IsNullOrEmpty(def.resourceId) ? def.resourceId : null;
+                    if (!string.IsNullOrEmpty(resId))
+                    {
+                        gridController.boardState.AddResource(pos, resId);
+                    }
                 }
                 gridController.AddTileToGrid(pos, resourceComponent);
             }

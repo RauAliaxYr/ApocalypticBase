@@ -19,18 +19,24 @@ public abstract class Resource : TileBase
             gridController = controller;
             
             // Set visual properties if definition is already set
-            if (definition != null && spriteRenderer != null && definition.sprite != null)
+            if (definition != null && spriteRenderer != null)
             {
-                spriteRenderer.sprite = definition.sprite;
+                if (definition.resourceSprite != null)
+                {
+                    spriteRenderer.sprite = definition.resourceSprite;
+                }
             }
         }
         
         public void SetDefinition(TileDefinition resourceDef)
         {
             definition = resourceDef;
-            if (spriteRenderer != null && resourceDef.sprite != null)
+            if (spriteRenderer != null)
             {
-                spriteRenderer.sprite = resourceDef.sprite;
+                if (resourceDef.resourceSprite != null)
+                {
+                    spriteRenderer.sprite = resourceDef.resourceSprite;
+                }
             }
         }
                 

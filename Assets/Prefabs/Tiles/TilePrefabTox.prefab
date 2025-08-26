@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8114765102455682397}
   - component: {fileID: -7493635863336339102}
   - component: {fileID: -6996525186343588940}
+  - component: {fileID: 3362228408907624479}
   m_Layer: 0
   m_Name: TilePrefabTox
   m_TagString: Untagged
@@ -151,3 +152,21 @@ MonoBehaviour:
   definition: {fileID: 11400000, guid: 2a381d9c154b4314e8732c10f6157b4a, type: 2}
   spriteRenderer: {fileID: 8114765102455682397}
   resourceCollider: {fileID: -7493635863336339102}
+--- !u!114 &3362228408907624479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1292164713680807302}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ff1d797ad330434590bc0ad15d6c1ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridPosition: {x: 0, y: 0}
+  evolution: {fileID: 11400000, guid: 2a381d9c154b4314e8732c10f6157b4a, type: 2}
+  level: 1
+  canBeSwapped: 1
+  spriteRenderer: {fileID: 8114765102455682397}
+  firePoint: {fileID: 5316707659927260322}

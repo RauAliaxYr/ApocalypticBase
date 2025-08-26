@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8114765102455682397}
   - component: {fileID: 8687322477551281736}
   - component: {fileID: 5547550317648252934}
+  - component: {fileID: 8669681400250351098}
   m_Layer: 0
   m_Name: TilePrefabCOat
   m_TagString: Untagged
@@ -151,3 +152,21 @@ MonoBehaviour:
   definition: {fileID: 11400000, guid: f020abf668bf88e41a87eacca31b267d, type: 2}
   spriteRenderer: {fileID: 8114765102455682397}
   resourceCollider: {fileID: 8687322477551281736}
+--- !u!114 &8669681400250351098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1292164713680807302}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4cb3822993a4a64ab6a50d42b2883b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gridPosition: {x: 0, y: 0}
+  evolution: {fileID: 11400000, guid: f020abf668bf88e41a87eacca31b267d, type: 2}
+  level: 1
+  canBeSwapped: 1
+  spriteRenderer: {fileID: 8114765102455682397}
+  firePoint: {fileID: 5316707659927260322}

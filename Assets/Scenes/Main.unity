@@ -272,6 +272,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minMatchCount: 3
   matchCheckDelay: 0.1
+  swapPlus: 0
 --- !u!4 &463923863
 Transform:
   m_ObjectHideFlags: 0
@@ -630,6 +631,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1506063315}
   - component: {fileID: 1506063314}
+  - component: {fileID: 1506063316}
   m_Layer: 0
   m_Name: GridRoot
   m_TagString: Untagged
@@ -656,7 +658,7 @@ MonoBehaviour:
   cellHeight: 1
   gridOrigin: {x: 0, y: 0, z: 0}
   allowedResourcePrefabs:
-  - {fileID: 1292164713680807302, guid: 34c632bc9879bce4c9dc3c63ada11876, type: 3}
+  - {fileID: 1292164713680807302, guid: 6307e3681237b6b458159747aa46c4cc, type: 3}
   - {fileID: 1292164713680807302, guid: 347abba7d491dbd46962b916189f5f3c, type: 3}
   - {fileID: 1292164713680807302, guid: 8a288953296efcb448f3d1a3ade49afa, type: 3}
   - {fileID: 1292164713680807302, guid: c23d5bcb3ab87c545a3ff41717837572, type: 3}
@@ -664,6 +666,7 @@ MonoBehaviour:
   - {fileID: 1292164713680807302, guid: b2db4b21bbb33354e9f003ec99ac60f3, type: 3}
   gridContainer: {fileID: 1063983632}
   matchSystem: {fileID: 463923862}
+  gridFiller: {fileID: 1506063316}
   boardState:
     width: 0
     height: 0
@@ -685,6 +688,45 @@ Transform:
   - {fileID: 1063983632}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1506063316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1506063313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f8e9d2c4a5b6c7d8e9f0a1b2c3d4e5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fallSpeed: 20
+  fallDelay: 0.001
+  fallCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  gridController: {fileID: 1506063314}
 --- !u!1 &1919276159
 GameObject:
   m_ObjectHideFlags: 0

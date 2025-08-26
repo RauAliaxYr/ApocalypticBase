@@ -1,0 +1,350 @@
+fileFormatVersion: 2
+guid: 4ad4bd9d6184c9f48977fd7156dad209
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3523776636446203606
+    second: panzersheet2_0
+  - first:
+      213: -6160176673280384277
+    second: panzersheet2_1
+  - first:
+      213: -1420726637352935149
+    second: panzersheet2_2
+  - first:
+      213: 170960423492206618
+    second: panzersheet2_3
+  - first:
+      213: 3197556422016580832
+    second: panzersheet2_4
+  - first:
+      213: 6248722114699639319
+    second: panzersheet2_5
+  - first:
+      213: 7984379108348902178
+    second: panzersheet2_6
+  - first:
+      213: 3816533846842030364
+    second: panzersheet2_7
+  - first:
+      213: -3755112373998878597
+    second: panzersheet2_8
+  - first:
+      213: 2661770688068934083
+    second: panzersheet2_9
+  - first:
+      213: -605684387412815146
+    second: panzersheet2_10
+  - first:
+      213: -7903705369352305917
+    second: panzersheet2_11
+  - first:
+      213: 2660678533993580195
+    second: panzersheet2_12
+  - first:
+      213: 3262002466856759453
+    second: panzersheet2_13
+  - first:
+      213: -2871536599512261972
+    second: panzersheet2_14
+  - first:
+      213: -5474314849181254912
+    second: panzersheet2_15
+  - first:
+      213: 5129390426374826387
+    second: panzersheet2_16
+  - first:
+      213: 7982173371342994200
+    second: panzersheet2_17
+  - first:
+      213: 5978558780353309764
+    second: panzersheet2_18
+  - first:
+      213: -4426261826830632179
+    second: panzersheet2_19
+  - first:
+      213: -6298283518561944726
+    second: panzersheet2_20
+  - first:
+      213: 84152260232351689
+    second: panzersheet2_21
+  - first:
+      213: -6650268689251732663
+    second: panzersheet2_22
+  - first:
+      213: -7963036898832902202
+    second: panzersheet2_23
+  - first:
+      213: 2659444662836447422
+    second: panzersheet2_24
+  - first:
+      213: 320744707123773034
+    second: panzersheet2_25
+  - first:
+      213: 5334513190871306164
+    second: panzersheet2_26
+  - first:
+      213: 7376831066506476184
+    second: panzersheet2_27
+  - first:
+      213: 7430373872245931744
+    second: panzersheet2_28
+  - first:
+      213: 9143661140118185652
+    second: panzersheet2_29
+  - first:
+      213: 1959857807569605288
+    second: panzersheet2_30
+  - first:
+      213: -4491194525994268556
+    second: panzersheet2_31
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 450
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: panzersheet2_0
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 745
+        width: 401
+        height: 332
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6de523b5e28f6e030800000000000000
+      internalID: 3523776636446203606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: panzersheet2_16
+      rect:
+        serializedVersion: 2
+        x: 58
+        y: 380
+        width: 406
+        height: 337
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3996c568a614f2740800000000000000
+      internalID: 5129390426374826387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: panzersheet2_17
+      rect:
+        serializedVersion: 2
+        x: 49
+        y: 16
+        width: 417
+        height: 343
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81b3b7ec36066ce60800000000000000
+      internalID: 7982173371342994200
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 8e7b1013c6676664b80a8e9abf266bbc
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      panzersheet2_0: 3523776636446203606
+      panzersheet2_1: -6160176673280384277
+      panzersheet2_10: -605684387412815146
+      panzersheet2_11: -7903705369352305917
+      panzersheet2_12: 2660678533993580195
+      panzersheet2_13: 3262002466856759453
+      panzersheet2_14: -2871536599512261972
+      panzersheet2_15: -5474314849181254912
+      panzersheet2_16: 5129390426374826387
+      panzersheet2_17: 7982173371342994200
+      panzersheet2_18: 5978558780353309764
+      panzersheet2_19: -4426261826830632179
+      panzersheet2_2: -1420726637352935149
+      panzersheet2_20: -6298283518561944726
+      panzersheet2_21: 84152260232351689
+      panzersheet2_22: -6650268689251732663
+      panzersheet2_23: -7963036898832902202
+      panzersheet2_24: 2659444662836447422
+      panzersheet2_25: 320744707123773034
+      panzersheet2_26: 5334513190871306164
+      panzersheet2_27: 7376831066506476184
+      panzersheet2_28: 7430373872245931744
+      panzersheet2_29: 9143661140118185652
+      panzersheet2_3: 170960423492206618
+      panzersheet2_30: 1959857807569605288
+      panzersheet2_31: -4491194525994268556
+      panzersheet2_4: 3197556422016580832
+      panzersheet2_5: 6248722114699639319
+      panzersheet2_6: 7984379108348902178
+      panzersheet2_7: 3816533846842030364
+      panzersheet2_8: -3755112373998878597
+      panzersheet2_9: 2661770688068934083
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

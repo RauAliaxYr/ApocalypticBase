@@ -12,9 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 034ed0a92afc55947b3e0caad304a19a, type: 3}
   m_Name: ElectroSO 4
   m_EditorClassIdentifier: 
-  id: 1
-  displayName: Electronic
-  sprite: {fileID: 2997810815091220991, guid: 75f24f3e776083842a67dfa878f3730d, type: 3}
   category: 0
   canBeSwapped: 1
-  producedTower: {fileID: 11400000, guid: d8e31e6679d2baa4cb33cfe42c8c7932, type: 2}
+  resourceId: 2
+  towerIds:
+  - 12
+  - 22
+  - 32
+  maxTowerLevel: 3
+  resourceSprite: {fileID: 2997810815091220991, guid: 75f24f3e776083842a67dfa878f3730d, type: 3}
+  towerLevelSprites:
+  - {fileID: -2650400829957663193, guid: 4e0dbc8cd71e494438eca03c242ad801, type: 3}
+  - {fileID: -906040516695575895, guid: 4e0dbc8cd71e494438eca03c242ad801, type: 3}
+  - {fileID: -7600083640996360095, guid: 4e0dbc8cd71e494438eca03c242ad801, type: 3}

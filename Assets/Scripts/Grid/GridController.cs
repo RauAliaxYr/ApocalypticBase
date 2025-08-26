@@ -25,6 +25,10 @@ public class GridController : MonoBehaviour
         public bool isGameActive = false;
         public bool isGridPositioned = false; // New property to track if grid has been positioned
         
+        // Last player swap tracking (used by MatchSystem to place towers)
+        public Vector2Int? lastSwapA = null;
+        public Vector2Int? lastSwapB = null;
+        
         private Dictionary<Vector2Int, TileBase> gridObjects = new Dictionary<Vector2Int, TileBase>();
         
         private void Awake()
@@ -119,12 +123,20 @@ public class GridController : MonoBehaviour
         }
 
         // Call this after a successful swap is performed by input system
-        public void OnPlayerSwapCompleted()
+        public void OnPlayerSwapCompleted(Vector2Int a, Vector2Int b)
         {
+            lastSwapA = a;
+            lastSwapB = b;
             if (matchSystem != null)
             {
                 matchSystem.CheckMatches();
             }
+        }
+        
+        public void ClearLastSwap()
+        {
+            lastSwapA = null;
+            lastSwapB = null;
         }
         
         public void FillEmptyCells()
@@ -186,7 +198,11 @@ public class GridController : MonoBehaviour
                 if (def != null)
                 {
                     resourceComponent.SetDefinition(def);
-                    boardState.AddResource(position, def.id);
+                    string resId = !string.IsNullOrEmpty(def.resourceId) ? def.resourceId : null;
+                    if (!string.IsNullOrEmpty(resId))
+                    {
+                        boardState.AddResource(position, resId);
+                    }
                 }
 
                 gridObjects[position] = resourceComponent;
@@ -212,7 +228,7 @@ public class GridController : MonoBehaviour
             if (towerComponent != null)
             {
                 towerComponent.Initialize(position, this);
-                towerComponent.ApplyDefinition(towerDef);
+                // Legacy path; evolution-based flow prefers transforming existing prefab
             }
             
             gridObjects[position] = towerComponent;
