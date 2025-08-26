@@ -12,7 +12,7 @@ public abstract class Tower : TileBase
         public SpriteRenderer spriteRenderer;
         public Transform firePoint;
         
-        public virtual void Initialize(Vector2Int position, GridController controller)
+        public override void Initialize(Vector2Int position, GridController controller)
         {
             base.Initialize(position, controller);
             // Definition will be applied separately by ApplyDefinition

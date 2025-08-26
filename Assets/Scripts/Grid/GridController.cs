@@ -214,26 +214,7 @@ public class GridController : MonoBehaviour
             }
         }
         
-        public void CreateTower(Vector2Int position, TowerDefinition towerDef)
-        {
-            if (!boardState.IsValidPosition(position) || boardState.GetTile(position) != null)
-                return;
-                
-            Vector3 worldPosition = GridToWorldPosition(position);
-            GameObject prefab = (towerDef != null) ? towerDef.towerPrefab : null;
-            if (prefab == null) return;
-            GameObject tower = Instantiate(prefab, worldPosition, Quaternion.identity, gridContainer);
-            
-            Tower towerComponent = tower.GetComponent<Tower>();
-            if (towerComponent != null)
-            {
-                towerComponent.Initialize(position, this);
-                // Legacy path; evolution-based flow prefers transforming existing prefab
-            }
-            
-            gridObjects[position] = towerComponent;
-            boardState.AddTower(position, towerDef.id, towerDef.level);
-        }
+        // CreateTower method removed - towers are now created by transforming existing resources
         
         // Swapping and matching handled by external systems
         

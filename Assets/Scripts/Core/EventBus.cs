@@ -85,8 +85,9 @@ public class EventBus : MonoBehaviour
     public class TowerUpgradedEvent
     {
         public Vector2Int Position;
-        public TowerDefinition OldTower;
-        public TowerDefinition NewTower;
+        public string OldTowerId;
+        public string NewTowerId;
+        public int NewLevel;
     }
     
     public class EnemySpawnedEvent

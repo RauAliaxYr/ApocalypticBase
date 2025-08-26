@@ -9,7 +9,7 @@ using UnityEngine;
         public float matchCheckDelay = 0.1f;
         
         private Dictionary<string, TileDefinition> tileIdToDef = new Dictionary<string, TileDefinition>();
-        private Dictionary<string, TowerDefinition> towerIdToDef = new Dictionary<string, TowerDefinition>();
+        // towerIdToDef removed - using evolution-based system
         
         [Header("Rewards")]
         // Stub: additional swaps granted for matches longer than 3
@@ -49,7 +49,6 @@ using UnityEngine;
         private void BuildDefinitionCaches()
         {
             tileIdToDef.Clear();
-            towerIdToDef.Clear();
             
             // From GridController resource prefabs
             if (gridController != null && gridController.allowedResourcePrefabs != null)
@@ -91,20 +90,10 @@ using UnityEngine;
                     }
                 }
             }
-            // towerIdToDef legacy cache is no longer needed for evolution-based logic
+            // Evolution-based system uses TileDefinition for both resources and towers
         }
 
-        private void RegisterTowerChain(TowerDefinition def)
-        {
-            var visited = new HashSet<string>();
-            var current = def;
-            while (current != null && !string.IsNullOrEmpty(current.id) && !visited.Contains(current.id))
-            {
-                visited.Add(current.id);
-                towerIdToDef[current.id] = current;
-                current = current.nextLevelTower;
-            }
-        }
+        // RegisterTowerChain removed - using evolution-based system
 
         private void OnFillCompleted(GridFiller.FillReason reason)
         {
@@ -391,8 +380,9 @@ using UnityEngine;
                 EventBus.Instance.Publish(new TowerUpgradedEvent
                 {
                     Position = centerPosition,
-                    OldTower = null,
-                    NewTower = null
+                    OldTowerId = cell.tileId,
+                    NewTowerId = nextId,
+                    NewLevel = nextLevel
                 });
             }
         }
@@ -500,14 +490,7 @@ using UnityEngine;
             return def;
         }
         
-        private TowerDefinition GetTowerDefinition(string towerId) { return null; }
-        
-        private TowerDefinition GetNextLevelTower(string currentTowerId)
-        {
-            // This would get the next level tower
-            // For now, return null
-            return null;
-        }
+        // GetTowerDefinition and GetNextLevelTower removed - using evolution-based system
     }
     
     [System.Serializable]
