@@ -30,12 +30,7 @@ public class GridController : MonoBehaviour
         public Vector2Int? lastSwapB = null;
         
         private Dictionary<Vector2Int, TileBase> gridObjects = new Dictionary<Vector2Int, TileBase>();
-        
-        private void Awake()
-        {
-            // BoardState will be created in Initialize() when Unity has set all field values
-        }
-        
+            
         public void Initialize()
         {
             // Create BoardState here when gridWidth and gridHeight are properly set
@@ -85,6 +80,7 @@ public class GridController : MonoBehaviour
         
         public void StartGame()
         {
+            Debug.Log("GridController: StartGame called, setting isGameActive = true");
             isGameActive = true;
         }
         

@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
         public WaveManager WaveManager;
         public EconomyManager EconomyManager;
         public SaveLoadManager SaveLoadManager;
+        public SwapSystem SwapSystem;
         
         [Header("Data")]
         public ProgressState ProgressState;
@@ -88,14 +89,43 @@ public class GameManager : MonoBehaviour
                 Debug.LogWarning("GameManager: EconomyManager is null");
             }
             
+            // SwapSystem dependencies should be set in inspector
+            if (SwapSystem == null)
+            {
+                Debug.LogWarning("GameManager: SwapSystem is null");
+            }
+            
             Debug.Log("GameManager.InitializeGame() completed");
+            
+            // Auto-start game for testing (can be removed later)
+            StartGame();
         }
         
         public void StartGame()
         {
+            Debug.Log("GameManager: StartGame called");
             CurrentGameState = GameState.Playing;
-            GridController.StartGame();
-            WaveManager.StartWaves();
+            
+            if (GridController != null)
+            {
+                GridController.StartGame();
+            }
+            else
+            {
+                Debug.LogError("GameManager: Cannot start game - GridController is null!");
+                return;
+            }
+            
+            if (WaveManager != null)
+            {
+                WaveManager.StartWaves();
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: WaveManager is null - waves will not start");
+            }
+            
+            Debug.Log("GameManager: Game started successfully");
         }
         
         public void PauseGame()
@@ -112,12 +142,27 @@ public class GameManager : MonoBehaviour
         
         public void RestartGame()
         {
+            if (SaveLoadManager != null)
+            {
+                SaveLoadManager.SaveProgress();
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: SaveLoadManager is null - progress will not be saved before restart");
+            }
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
         
         public void ExitGame()
         {
-            SaveLoadManager.SaveProgress();
+            if (SaveLoadManager != null)
+            {
+                SaveLoadManager.SaveProgress();
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: SaveLoadManager is null - progress will not be saved");
+            }
             Application.Quit();
         }
     }
