@@ -5,8 +5,8 @@ using UnityEngine;
 public class GridController : MonoBehaviour
     {
         [Header("Grid Settings")]
-        public int gridWidth = 8;
-        public int gridHeight = 8;
+        public int gridWidth = 5;
+        public int gridHeight = 5;
         public float cellSize = 1f; // Legacy - kept for compatibility
         public float cellWidth = 1f; // Width of each cell
         public float cellHeight = 1f; // Height of each cell
@@ -18,6 +18,7 @@ public class GridController : MonoBehaviour
         [Header("References")]
         public Transform gridContainer;
         public MatchSystem matchSystem;
+        public GridFiller gridFiller;
         
         [Header("State")]
         public BoardState boardState;
@@ -55,9 +56,18 @@ public class GridController : MonoBehaviour
                 return;
             }
             
+            if (gridFiller == null)
+            {
+                Debug.LogError("GridController: gridFiller is not set!");
+                return;
+            }
+            
+            // Initialize systems
+            matchSystem.Initialize(this);
+            gridFiller.Initialize(this);
+            
             // Don't create grid here - wait for layout to be applied first
             // Grid will be created when ApplyLayoutFromAnchors is called
-            matchSystem.Initialize(this);
         }
         
         // New method to create the grid after layout is applied
@@ -65,13 +75,31 @@ public class GridController : MonoBehaviour
         {
             if (boardState == null) return;
             
-            // create visual cells not used now; just fill resources
-            FillEmptyCells();
+            // Fill grid with falling animation
+            gridFiller.FillEmptyCellsWithAnimation();
         }
         
         public void StartGame()
         {
             isGameActive = true;
+        }
+        
+        // Fill empty cells after tiles are removed (e.g., after matches)
+        public void FillAfterRemoval()
+        {
+            if (gridFiller != null && !gridFiller.IsFilling)
+            {
+                gridFiller.FillEmptyCellsWithAnimation();
+            }
+        }
+        
+        // Fill specific positions after removal
+        public void FillPositionsAfterRemoval(List<Vector2Int> positions)
+        {
+            if (gridFiller != null && !gridFiller.IsFilling)
+            {
+                gridFiller.FillPositionsWithAnimation(positions);
+            }
         }
         
         public void FillEmptyCells()
@@ -184,6 +212,11 @@ public class GridController : MonoBehaviour
             return null;
         }
         
+        public void AddTileToGrid(Vector2Int position, TileBase tile)
+        {
+            gridObjects[position] = tile;
+        }
+              
         public void RemoveTile(Vector2Int position)
         {
             if (gridObjects.ContainsKey(position))
@@ -258,6 +291,4 @@ public class GridController : MonoBehaviour
                 }
             }
         }
-        
-        // Input/highlighting are handled elsewhere
     }

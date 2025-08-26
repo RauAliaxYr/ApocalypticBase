@@ -315,12 +315,11 @@ using UnityEngine;
                 boardState.RemoveResource(position);
                 
                 // Remove visual objects
-                // GameObject tileObj = gridController.GetTileObjectAt(position);
-                // if (tileObj != null)
-                // {
-                //     Destroy(tileObj);
-                // }
+                gridController.RemoveTile(position);
             }
+            
+            // Fill empty positions with falling animation
+            gridController.FillPositionsAfterRemoval(positions);
         }
         
         private Vector2Int GetCenterPosition(List<Vector2Int> positions)
