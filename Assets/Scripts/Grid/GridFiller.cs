@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GridFiller : MonoBehaviour
 {
+    public enum FillReason { Initial, AfterRemoval, Manual }
     [Header("Animation Settings")]
     public float fallSpeed = 10f;
     public float fallDelay = 0.1f;
@@ -13,6 +14,8 @@ public class GridFiller : MonoBehaviour
     public GridController gridController;
     
     private bool isFilling = false;
+    public System.Action<FillReason> OnFillCompleted;
+    private FillReason lastReason = FillReason.Manual;
     
     public void Initialize(GridController controller)
     {
@@ -23,7 +26,7 @@ public class GridFiller : MonoBehaviour
     public void FillEmptyCellsWithAnimation()
     {
         if (isFilling) return;
-        
+        lastReason = FillReason.Initial;
         StartCoroutine(FillEmptyCellsCoroutine());
     }
     
@@ -31,7 +34,7 @@ public class GridFiller : MonoBehaviour
     public void FillEmptyCellsWithAnimationFrom(Vector2Int start)
     {
         if (isFilling) return;
-        
+        lastReason = FillReason.Manual;
         StartCoroutine(FillEmptyCellsCoroutine(start));
     }
     
@@ -39,8 +42,8 @@ public class GridFiller : MonoBehaviour
     public void FillPositionsWithAnimation(List<Vector2Int> positions)
     {
         if (isFilling) return;
-        
-        StartCoroutine(FillPositionsCoroutine(positions));
+        lastReason = FillReason.AfterRemoval;
+        StartCoroutine(FillPositionsWithState(positions));
     }
     
     // Fill all empty cells from top to bottom
@@ -64,6 +67,7 @@ public class GridFiller : MonoBehaviour
         yield return StartCoroutine(FillPositionsCoroutine(emptyPositions));
         
         isFilling = false;
+        OnFillCompleted?.Invoke(lastReason);
     }
     
     private IEnumerator FillEmptyCellsCoroutine(Vector2Int start)
@@ -88,6 +92,7 @@ public class GridFiller : MonoBehaviour
         }
         
         isFilling = false;
+        OnFillCompleted?.Invoke(lastReason);
     }
     
     // Fill specific positions with falling animation (round-robin per column, bottom-up)
@@ -155,6 +160,14 @@ public class GridFiller : MonoBehaviour
         }
     }
 
+    private IEnumerator FillPositionsWithState(List<Vector2Int> positions)
+    {
+        isFilling = true;
+        yield return StartCoroutine(FillPositionsCoroutine(positions));
+        isFilling = false;
+        OnFillCompleted?.Invoke(lastReason);
+    }
+
     private IEnumerator SpawnAndFallAt(Vector2Int pos, System.Action onComplete)
     {
         // Create tile above the grid
@@ -179,6 +192,7 @@ public class GridFiller : MonoBehaviour
                 }
                 
                 // Animate falling first
+                if (tile == null) { onComplete?.Invoke(); yield break; }
                 yield return StartCoroutine(AnimateTileFall(tile, targetPosition));
                 
                 // Finalize initialization after animation
@@ -216,6 +230,7 @@ public class GridFiller : MonoBehaviour
     // Animate a tile falling from start to target position
     private IEnumerator AnimateTileFall(GameObject tile, Vector3 targetPosition)
     {
+        if (tile == null) yield break;
         Vector3 startPosition = tile.transform.position;
         float distance = Vector3.Distance(startPosition, targetPosition);
         float fallTime = distance / fallSpeed;
@@ -224,6 +239,7 @@ public class GridFiller : MonoBehaviour
         
         while (elapsedTime < fallTime)
         {
+            if (tile == null) yield break;
             elapsedTime += Time.deltaTime;
             float progress = elapsedTime / fallTime;
             float curveValue = fallCurve.Evaluate(progress);
@@ -234,7 +250,7 @@ public class GridFiller : MonoBehaviour
         }
         
         // Ensure final position is exact
-        tile.transform.position = targetPosition;
+        if (tile != null) tile.transform.position = targetPosition;
     }
     
     // Get start position above the grid for falling tiles
@@ -288,5 +304,92 @@ public class GridFiller : MonoBehaviour
     {
         StopAllCoroutines();
         isFilling = false;
+    }
+
+    // Collapse existing tiles downward into empty spaces, then fill top with new tiles
+    public void CollapseAndFillAfterRemoval(List<Vector2Int> removedPositions)
+    {
+        if (isFilling) return;
+        lastReason = FillReason.AfterRemoval;
+        StartCoroutine(CollapseAndFillCoroutine(removedPositions));
+    }
+
+    private IEnumerator CollapseAndFillCoroutine(List<Vector2Int> removedPositions)
+    {
+        isFilling = true;
+        HashSet<Vector2Int> removedSet = new HashSet<Vector2Int>(removedPositions);
+        
+        int pendingMoves = 0;
+        
+        // For each column, compact tiles downwards
+        for (int x = 0; x < gridController.gridWidth; x++)
+        {
+            int writeY = 0;
+            for (int y = 0; y < gridController.gridHeight; y++)
+            {
+                Vector2Int from = new Vector2Int(x, y);
+                if (removedSet.Contains(from))
+                {
+                    continue;
+                }
+                TileBase tile = gridController.GetTileAt(from);
+                if (tile == null)
+                {
+                    continue;
+                }
+                if (writeY != y)
+                {
+                    Vector2Int to = new Vector2Int(x, writeY);
+                    var cell = gridController.boardState.GetTile(from);
+                    if (cell != null)
+                    {
+                        gridController.MoveTileMapping(from, to, tile, cell.tileId, cell.category, cell.level);
+                    }
+                    tile.UpdatePosition(to);
+                    Vector3 target = gridController.GridToWorldPosition(to);
+                    pendingMoves++;
+                    StartCoroutine(AnimateAndCount(tile.gameObject, target, () => { pendingMoves--; }));
+                }
+                writeY++;
+            }
+        }
+        
+        // wait for all downward moves
+        while (pendingMoves > 0)
+        {
+            yield return null;
+        }
+        
+        // After collapse, fill remaining empty positions at the top
+        List<Vector2Int> empties = new List<Vector2Int>();
+        for (int x = 0; x < gridController.gridWidth; x++)
+        {
+            for (int y = 0; y < gridController.gridHeight; y++)
+            {
+                Vector2Int p = new Vector2Int(x, y);
+                if (!gridController.IsPositionOccupied(p))
+                {
+                    empties.Add(p);
+                }
+            }
+        }
+        
+        isFilling = false;
+        
+        if (empties.Count > 0)
+        {
+            FillPositionsWithAnimation(empties);
+        }
+        else
+        {
+            OnFillCompleted?.Invoke(lastReason);
+        }
+    }
+
+    private IEnumerator AnimateAndCount(GameObject tile, Vector3 target, System.Action onDone)
+    {
+        if (tile == null) { onDone?.Invoke(); yield break; }
+        yield return StartCoroutine(AnimateTileFall(tile, target));
+        onDone?.Invoke();
     }
 }

@@ -75,7 +75,7 @@ public class GridController : MonoBehaviour
         {
             if (boardState == null) return;
             
-            // Fill grid with falling animation
+            // Fill grid with falling animation (initial)
             gridFiller.FillEmptyCellsWithAnimation();
         }
         
@@ -89,7 +89,23 @@ public class GridController : MonoBehaviour
         {
             if (gridFiller != null && !gridFiller.IsFilling)
             {
-                gridFiller.FillEmptyCellsWithAnimation();
+                // Find empty positions and fill only them to mark as AfterRemoval
+                List<Vector2Int> empties = new List<Vector2Int>();
+                for (int x = 0; x < gridWidth; x++)
+                {
+                    for (int y = 0; y < gridHeight; y++)
+                    {
+                        Vector2Int p = new Vector2Int(x, y);
+                        if (!IsPositionOccupied(p))
+                        {
+                            empties.Add(p);
+                        }
+                    }
+                }
+                if (empties.Count > 0)
+                {
+                    gridFiller.FillPositionsWithAnimation(empties);
+                }
             }
         }
         
@@ -98,7 +114,16 @@ public class GridController : MonoBehaviour
         {
             if (gridFiller != null && !gridFiller.IsFilling)
             {
-                gridFiller.FillPositionsWithAnimation(positions);
+                gridFiller.CollapseAndFillAfterRemoval(positions);
+            }
+        }
+
+        // Call this after a successful swap is performed by input system
+        public void OnPlayerSwapCompleted()
+        {
+            if (matchSystem != null)
+            {
+                matchSystem.CheckMatches();
             }
         }
         
@@ -215,6 +240,29 @@ public class GridController : MonoBehaviour
         public void AddTileToGrid(Vector2Int position, TileBase tile)
         {
             gridObjects[position] = tile;
+        }
+        
+        // Move mapping and board state for a tile without destroying it (used by gravity)
+        public void MoveTileMapping(Vector2Int from, Vector2Int to, TileBase tile, string tileId, TileCategory category, int level)
+        {
+            // Update board state
+            if (category == TileCategory.Resource)
+            {
+                boardState.RemoveResource(from);
+                boardState.AddResource(to, tileId);
+            }
+            else if (category == TileCategory.Tower)
+            {
+                boardState.RemoveTower(from);
+                boardState.AddTower(to, tileId, level);
+            }
+            
+            // Update visual mapping
+            if (gridObjects.ContainsKey(from) && gridObjects[from] == tile)
+            {
+                gridObjects.Remove(from);
+                gridObjects[to] = tile;
+            }
         }
               
         public void RemoveTile(Vector2Int position)

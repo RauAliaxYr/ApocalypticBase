@@ -8,14 +8,16 @@ using UnityEngine;
         public int minMatchCount = 3;
         public float matchCheckDelay = 0.1f;
         
+        [Header("Rewards")]
+        // Stub: additional swaps granted for matches longer than 3
+        public int swapPlus = 0;
+        
         private GridController gridController;
         private BoardState boardState;
         private bool isCheckingMatches = false;
         
         public void Initialize(GridController controller)
         {
-            Debug.Log("MatchSystem.Initialize() called");
-            
             if (controller == null)
             {
                 Debug.LogError("MatchSystem: GridController is null!");
@@ -31,7 +33,17 @@ using UnityEngine;
                 return;
             }
             
-            Debug.Log($"MatchSystem: Initialized with grid {boardState.width}x{boardState.height}");
+            // Subscribe to fill completion to trigger cascade checks
+            if (gridController.gridFiller != null)
+            {
+                gridController.gridFiller.OnFillCompleted += OnFillCompleted;
+            }
+        }
+
+        private void OnFillCompleted(GridFiller.FillReason reason)
+        {
+            // Always check matches after any fill (supports cascades and initial matches)
+            CheckMatches();
         }
         
         public void CheckMatches()
@@ -94,8 +106,8 @@ using UnityEngine;
                     }
                     else
                     {
-                        // Check if we have a match
-                        if (currentCount >= minMatchCount)
+                        // Check if we have a match (non-empty)
+                        if (currentCount >= minMatchCount && !string.IsNullOrEmpty(currentType))
                         {
                             matches.Add(new MatchData
                             {
@@ -113,8 +125,8 @@ using UnityEngine;
                     }
                 }
                 
-                // Check last potential match in row
-                if (currentCount >= minMatchCount)
+                // Check last potential match in row (non-empty)
+                if (currentCount >= minMatchCount && !string.IsNullOrEmpty(currentType))
                 {
                     matches.Add(new MatchData
                     {
@@ -150,8 +162,8 @@ using UnityEngine;
                     }
                     else
                     {
-                        // Check if we have a match
-                        if (currentCount >= minMatchCount)
+                        // Check if we have a match (non-empty)
+                        if (currentCount >= minMatchCount && !string.IsNullOrEmpty(currentType))
                         {
                             matches.Add(new MatchData
                             {
@@ -169,8 +181,8 @@ using UnityEngine;
                     }
                 }
                 
-                // Check last potential match in column
-                if (currentCount >= minMatchCount)
+                // Check last potential match in column (non-empty)
+                if (currentCount >= minMatchCount && !string.IsNullOrEmpty(currentType))
                 {
                     matches.Add(new MatchData
                     {
@@ -223,6 +235,12 @@ using UnityEngine;
                 });
             }
             
+            // Reward: for every tile beyond 3 in a match, add +1 to swapPlus
+            if (match.matchCount > 3)
+            {
+                swapPlus += (match.matchCount - 3);
+            }
+            
             // New rules:
             // - 3 ресурсов одного типа -> создаём башню producedTower в центре матча
             // - 3 башни одного уровня и типа -> создаём башню nextLevel в центре
@@ -238,7 +256,8 @@ using UnityEngine;
                 ProcessTowerMatch(match);
             }
             
-            // Remove matched tiles
+            // Replace center with a tower if resource match; otherwise just remove matched
+            // Remove only the matched tiles; tiles above will fall via filler
             RemoveMatchedTiles(match.positions);
         }
         
@@ -308,17 +327,15 @@ using UnityEngine;
         
         private void RemoveMatchedTiles(List<Vector2Int> positions)
         {
+            // Remove only these positions
             foreach (Vector2Int position in positions)
             {
-                // Remove from board state
                 boardState.RemoveTower(position);
                 boardState.RemoveResource(position);
-                
-                // Remove visual objects
                 gridController.RemoveTile(position);
             }
             
-            // Fill empty positions with falling animation
+            // Let gravity collapse and fill
             gridController.FillPositionsAfterRemoval(positions);
         }
         
