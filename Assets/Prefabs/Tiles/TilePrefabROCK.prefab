@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 7342345988855597783}
   - component: {fileID: -8321090779664707536}
   - component: {fileID: 2115785619189428977}
-  m_Layer: 0
+  m_Layer: 1
   m_Name: TilePrefabROCK
   m_TagString: Untagged
   m_Icon: {fileID: 0}

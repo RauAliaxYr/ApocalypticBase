@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: -1599439918396728108}
   - component: {fileID: -2142552513745216695}
   - component: {fileID: -9185897583514745644}
-  m_Layer: 0
+  m_Layer: 1
   m_Name: TilePrefabWood
   m_TagString: Untagged
   m_Icon: {fileID: 0}
