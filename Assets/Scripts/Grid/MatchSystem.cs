@@ -21,6 +21,8 @@ using UnityEngine;
         private GridController gridController;
         private BoardState boardState;
         private bool isCheckingMatches = false;
+        // Collect positions removed during current match-processing pass
+        private List<Vector2Int> removedPositionsBuffer = new List<Vector2Int>();
         
         public void Initialize(GridController controller)
         {
@@ -123,21 +125,15 @@ using UnityEngine;
             // Check vertical matches
             List<MatchData> verticalMatches = FindVerticalMatches();
             
-            // Process all matches
+            // Combine all matches
             List<MatchData> allMatches = new List<MatchData>();
             allMatches.AddRange(horizontalMatches);
             allMatches.AddRange(verticalMatches);
             
-            foreach (MatchData match in allMatches)
-            {
-                yield return ProcessMatchCoroutine(match);
-            }
-            
-            // Check for cascading matches
+            // Process matches sequentially to avoid conflicts
             if (allMatches.Count > 0)
             {
-                yield return new WaitForSeconds(matchCheckDelay);
-                CheckMatches(); // Recursive check for cascading
+                yield return ProcessMatchesSequentially(allMatches);
             }
             
             isCheckingMatches = false;
@@ -280,6 +276,28 @@ using UnityEngine;
             return cell != null ? cell.tileId : "";
         }
         
+        private IEnumerator ProcessMatchesSequentially(List<MatchData> matches)
+        {
+            // Prepare buffer for all removed positions across matches
+            removedPositionsBuffer.Clear();
+
+            // Process each match one by one
+            foreach (MatchData match in matches)
+            {
+                yield return ProcessMatchCoroutine(match);
+            }
+            
+            // After all matches are processed, trigger collapse and then new fill for removed positions
+            if (gridController != null && gridController.gridFiller != null)
+            {
+                if (removedPositionsBuffer.Count > 0)
+                {
+                    // Collapse existing tiles into gaps, then spawn new tiles for remaining empties
+                    gridController.FillPositionsAfterRemoval(removedPositionsBuffer);
+                }
+            }
+        }
+
         private void ProcessMatch(MatchData match)
         {
             // Publish match event
@@ -299,28 +317,19 @@ using UnityEngine;
                 swapPlus += (match.matchCount - 3);
             }
             
-            // New rules:
-            // - 3 ресурсов одного типа -> создаём башню producedTower в центре матча
-            // - 3 башни одного уровня и типа -> создаём башню nextLevel в центре
-            var anyPos = match.positions[0];
-            var cell = boardState.GetTile(anyPos);
-            if (cell == null) { RemoveMatchedTiles(match.positions); return; }
-            if (cell.category == TileCategory.Resource)
-            {
-                ProcessResourceMatch(match);
-            }
-            else if (cell.category == TileCategory.Tower)
-            {
-                ProcessTowerMatch(match);
-            }
-            
-            // Tower should appear on spawnPos cell; exclude it from removal list
-            Vector2Int towerPos = (cell != null && cell.category == TileCategory.Resource) ? ChooseTowerSpawnPosition(match) : GetCenterPosition(match.positions);
+            // Unified flow: choose one result position, then evolve tile at that position
+            Vector2Int resultPos = ChooseResultPosition(match);
+            ProcessUnifiedMatch(match, resultPos);
             
             List<Vector2Int> toRemove = new List<Vector2Int>(match.positions);
-            toRemove.Remove(towerPos);
+            toRemove.Remove(resultPos);
             
             RemoveMatchedTiles(toRemove);
+            // Track removed positions for a single collapse-and-fill after all matches
+            if (toRemove != null && toRemove.Count > 0)
+            {
+                removedPositionsBuffer.AddRange(toRemove);
+            }
             
             // Clear last swap markers after processing
             gridController.ClearLastSwap();
@@ -328,27 +337,8 @@ using UnityEngine;
 
         private IEnumerator ProcessMatchCoroutine(MatchData match)
         {
-            // Determine spawn position consistent with ProcessMatch logic
-            Vector2Int anyPos = match.positions[0];
-            var cell = boardState.GetTile(anyPos);
-            if (cell == null)
-            {
-                yield break;
-            }
-
-            Vector2Int spawnPos;
-            if (cell.category == TileCategory.Resource)
-            {
-                spawnPos = ChooseTowerSpawnPosition(match);
-            }
-            else if (cell.category == TileCategory.Tower)
-            {
-                spawnPos = GetCenterPosition(match.positions);
-            }
-            else
-            {
-                spawnPos = GetCenterPosition(match.positions);
-            }
+            // Determine unified spawn/result position
+            Vector2Int spawnPos = ChooseResultPosition(match);
 
             // Animate all matched tiles moving toward the spawn position
             if (gridController != null)
@@ -409,10 +399,9 @@ using UnityEngine;
             }
         }
         
-        private void ProcessResourceMatch(MatchData match)
+        private void ProcessResourceMatch(MatchData match, Vector2Int spawnPos)
         {
             // 3 одинаковых ресурса = превращаем ресурсный префаб в башню 1 уровня
-            Vector2Int spawnPos = ChooseTowerSpawnPosition(match);
             if (!boardState.IsValidPosition(spawnPos)) return;
 
             TileDefinition resDef = GetTileDefinition(match.tileType);
@@ -434,16 +423,34 @@ using UnityEngine;
                 string towerId = (resDef.towerIds != null && resDef.towerIds.Length > 0 && !string.IsNullOrEmpty(resDef.towerIds[0])) ? resDef.towerIds[0] : match.tileType + "_tower1";
                 boardState.RemoveResource(spawnPos);
                 boardState.AddTower(spawnPos, towerId, 1);
-                Debug.Log($"MatchSystem: Tower transformed at {spawnPos} to level 1 (id={towerId})");
+                // Ensure grid mapping now points to the active Tower component
+                gridController.AddTileToGrid(spawnPos, tower);
+            }
+            else
+            {
             }
         }
         
-        private void ProcessTowerMatch(MatchData match)
+        private void ProcessTowerMatch(MatchData match, Vector2Int upgradePos)
         {
             // 3 одинаковых башни = повышаем уровень существующей башни
-            Vector2Int centerPosition = GetCenterPosition(match.positions);
+            // Prefer requested upgrade position, but fallback to any tile in match that is a tower
+            Vector2Int centerPosition = upgradePos;
             var cell = boardState.GetTile(centerPosition);
-            if (cell == null || cell.category != TileCategory.Tower) return;
+            if (cell == null || cell.category != TileCategory.Tower)
+            {
+                foreach (var p in match.positions)
+                {
+                    var c = boardState.GetTile(p);
+                    if (c != null && c.category == TileCategory.Tower)
+                    {
+                        centerPosition = p;
+                        cell = c;
+                        break;
+                    }
+                }
+                if (cell == null || cell.category != TileCategory.Tower) return;
+            }
 
             TileBase tileObj = gridController.GetTileAt(centerPosition);
             if (tileObj == null) return;
@@ -458,7 +465,8 @@ using UnityEngine;
             string nextId = (tower.evolution.towerIds != null && tower.evolution.towerIds.Length >= nextLevel) ? tower.evolution.towerIds[nextLevel - 1] : (cell.tileId + "_lvl" + nextLevel);
             boardState.RemoveTower(centerPosition);
             boardState.AddTower(centerPosition, nextId, nextLevel);
-            Debug.Log($"MatchSystem: Tower upgraded at {centerPosition} to level {nextLevel} (id={nextId})");
+            // Keep grid mapping pointing at the same tile (tower still active)
+            gridController.AddTileToGrid(centerPosition, tower);
             
             // Publish upgrade event (optional)
             if (EventBus.Instance != null)
@@ -493,7 +501,7 @@ using UnityEngine;
         
         private void RemoveMatchedTiles(List<Vector2Int> positions)
         {
-            // Remove only these positions
+            // Remove only these positions (no filling here - will be done after all matches)
             foreach (Vector2Int position in positions)
             {
                 boardState.RemoveTower(position);
@@ -501,8 +509,7 @@ using UnityEngine;
                 gridController.RemoveTile(position);
             }
             
-            // Let gravity collapse and fill
-            gridController.FillPositionsAfterRemoval(positions);
+            // Note: Filling is now handled in ProcessMatchesSequentially after all matches are processed
         }
 
         private Vector2Int ChooseTowerSpawnPosition(MatchData match)
@@ -577,6 +584,94 @@ using UnityEngine;
         }
         
         // GetTowerDefinition and GetNextLevelTower removed - using evolution-based system
+        
+        private void ProcessUnifiedMatch(MatchData match, Vector2Int resultPos)
+        {
+            var cell = boardState.GetTile(resultPos);
+            if (cell == null) return;
+            if (!TryGetNextEvolution(cell.tileId, cell.level, out var def, out string nextId, out TileCategory nextCategory, out int nextLevel))
+            {
+                return;
+            }
+
+            TileBase tileObj = gridController.GetTileAt(resultPos);
+            if (tileObj == null) return;
+            Resource res = tileObj.GetComponent<Resource>();
+            Tower tower = tileObj.GetComponent<Tower>();
+
+            if (nextCategory == TileCategory.Tower)
+            {
+                if (res != null) res.enabled = false;
+                if (tower != null)
+                {
+                    tower.enabled = true;
+                    tower.ApplyEvolution(def, nextLevel);
+                    boardState.RemoveResource(resultPos);
+                    boardState.RemoveTower(resultPos);
+                    boardState.AddTower(resultPos, nextId, nextLevel);
+                    gridController.AddTileToGrid(resultPos, tower);
+                }
+            }
+        }
+
+        private bool TryGetNextEvolution(string currentId, int currentLevel, out TileDefinition def, out string nextId, out TileCategory category, out int nextLevel)
+        {
+            def = GetTileDefinition(currentId);
+            nextId = null;
+            category = TileCategory.Resource;
+            nextLevel = currentLevel;
+            if (def == null) return false;
+
+            // Resource -> Tower level 1
+            if (!string.IsNullOrEmpty(def.resourceId) && currentId == def.resourceId)
+            {
+                if (def.towerIds != null && def.towerIds.Length > 0 && !string.IsNullOrEmpty(def.towerIds[0]))
+                {
+                    nextId = def.towerIds[0];
+                    category = TileCategory.Tower;
+                    nextLevel = 1;
+                    return true;
+                }
+                return false;
+            }
+
+            // Tower level N -> N+1 (by matching id in the chain)
+            if (def.towerIds != null)
+            {
+                for (int i = 0; i < def.towerIds.Length; i++)
+                {
+                    string tid = def.towerIds[i];
+                    if (string.IsNullOrEmpty(tid)) continue;
+                    if (tid == currentId)
+                    {
+                        int currentTowerLevel = i + 1;
+                        int desired = currentTowerLevel + 1;
+                        if (desired <= def.maxTowerLevel && desired - 1 < def.towerIds.Length && !string.IsNullOrEmpty(def.towerIds[desired - 1]))
+                        {
+                            nextId = def.towerIds[desired - 1];
+                            category = TileCategory.Tower;
+                            nextLevel = desired;
+                            return true;
+                        }
+                        return false; // Already at max
+                    }
+                }
+            }
+            return false;
+        }
+
+        private Vector2Int ChooseResultPosition(MatchData match)
+        {
+            if (gridController.lastSwapA.HasValue && match.positions.Contains(gridController.lastSwapA.Value))
+            {
+                return gridController.lastSwapA.Value;
+            }
+            if (gridController.lastSwapB.HasValue && match.positions.Contains(gridController.lastSwapB.Value))
+            {
+                return gridController.lastSwapB.Value;
+            }
+            return GetCenterPositionRandomIfEven(match.positions, match.isHorizontal);
+        }
     }
     
     [System.Serializable]

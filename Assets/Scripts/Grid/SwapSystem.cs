@@ -34,66 +34,21 @@ public class SwapSystem : MonoBehaviour
     private Vector2Int selectedPosition;
     private bool isSwapping = false;
     
+    [Header("Debug")]
+    public bool logClicks = true;
+    
     private void Awake()
     {
-        Debug.Log("SwapSystem: Awake called");
         mainCamera = Camera.main;
-        if (mainCamera == null)
-        {
-            Debug.LogWarning("SwapSystem: Camera.main is null, searching for any camera");
-        }
-        
-        if (mainCamera != null)
-        {
-            Debug.Log($"SwapSystem: Camera found: {mainCamera.name}");
-        }
-        else
-        {
-            Debug.LogError("SwapSystem: No camera found!");
-        }
     }
     
-    private void Start()
-    {
-        Debug.Log("SwapSystem: Start called");
-        
-        // Dependencies should be set in inspector
-        if (gridController == null)
-        {
-            Debug.LogError("SwapSystem: gridController reference is not set in inspector!");
-        }
-        else
-        {
-            Debug.Log($"SwapSystem: gridController found: {gridController.name}");
-        }
-        
-        if (economyManager == null)
-        {
-            Debug.LogWarning("SwapSystem: economyManager reference is not set in inspector - swaps will be unlimited for testing");
-        }
-        else
-        {
-            Debug.Log($"SwapSystem: economyManager found: {economyManager.name}");
-        }
-        
-        if (mainCamera == null)
-        {
-            Debug.LogError("SwapSystem: mainCamera is null!");
-        }
-        else
-        {
-            Debug.Log($"SwapSystem: mainCamera found: {mainCamera.name}");
-        }
-    }
+    private void Start() { }
     
     private void Update()
     {
-        if (isSwapping || gridController == null || !gridController.isGameActive) 
+        if (isSwapping || gridController == null || !gridController.isGameActive || 
+            (gridController.gridFiller != null && gridController.gridFiller.IsFilling)) 
         {
-            if (gridController == null)
-                Debug.LogWarning("SwapSystem: gridController is null");
-            else if (!gridController.isGameActive)
-                Debug.LogWarning("SwapSystem: grid is not active");
             return;
         }
         
@@ -104,7 +59,6 @@ public class SwapSystem : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            Debug.Log("SwapSystem: Mouse button down");
             SelectTile();
         }
         
@@ -124,25 +78,24 @@ public class SwapSystem : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction, Mathf.Infinity, tileLayerMask);
         
-        Debug.Log($"SwapSystem: SelectTile - Mouse: {mousePosition}, Ray: {ray.origin} -> {ray.direction}, Hit: {hit.collider != null}");
-        
         if (hit.collider != null)
         {
             TileBase tile = hit.collider.GetComponent<TileBase>();
-            Debug.Log($"SwapSystem: Found component: {tile != null}, CanBeSwapped: {tile?.CanBeSwapped()}");
             
             if (tile != null && tile.CanBeSwapped())
             {
+                if (logClicks)
+                {
+                    Debug.Log($"Click Debug: Tile at grid {tile.gridPosition}, world {tile.transform.position}");
+                }
                 // If we already have a selected tile, check if we can swap
                 if (selectedTile != null)
                 {
                     Vector2Int newPosition = tile.gridPosition;
-                    Debug.Log($"SwapSystem: Second tile clicked at position {newPosition}, selected position: {selectedPosition}");
                     
                     // If clicking the same tile, deselect it
                     if (newPosition == selectedPosition)
                     {
-                        Debug.Log("SwapSystem: Same tile clicked, deselecting");
                         ResetTileScale(selectedTile.transform);
                         selectedTile = null;
                         selectedPosition = Vector2Int.zero;
@@ -152,25 +105,10 @@ public class SwapSystem : MonoBehaviour
                     // Check if tiles are adjacent
                     if (ArePositionsAdjacent(selectedPosition, newPosition))
                     {
-                        Debug.Log("SwapSystem: Tiles are adjacent, attempting swap");
-                        
                         // Check if we have swaps left (optional for testing)
                         if (economyManager == null || economyManager.GetSwapsLeft() > 0)
                         {
-                            if (economyManager != null)
-                            {
-                                Debug.Log($"SwapSystem: Swaps left: {economyManager.GetSwapsLeft()}, starting swap");
-                            }
-                            else
-                            {
-                                Debug.Log("SwapSystem: No economy manager - unlimited swaps for testing");
-                            }
                             StartCoroutine(PerformSwap(selectedPosition, newPosition));
-                        }
-                        else
-                        {
-                            Debug.Log("SwapSystem: No swaps left!");
-                            // Could show UI message here
                         }
                         
                         // Clear selection after swap attempt
@@ -180,9 +118,6 @@ public class SwapSystem : MonoBehaviour
                     }
                     else
                     {
-                        Debug.Log($"SwapSystem: Tiles are not adjacent! Delta: ({Mathf.Abs(selectedPosition.x - newPosition.x)}, {Mathf.Abs(selectedPosition.y - newPosition.y)})");
-                        Debug.Log("SwapSystem: Replacing selection with new tile");
-                        
                         // Replace selection with new tile
                         ResetTileScale(selectedTile.transform); // Reset old selection
                         selectedTile = tile;
@@ -195,7 +130,6 @@ public class SwapSystem : MonoBehaviour
                     // First tile selection
                     selectedTile = tile;
                     selectedPosition = tile.gridPosition;
-                    Debug.Log($"SwapSystem: First tile selected at position {selectedPosition}");
                     
                     // Visual feedback for selection
                     StartCoroutine(AnimateSelection(tile.transform));
@@ -204,12 +138,9 @@ public class SwapSystem : MonoBehaviour
         }
         else
         {
-            Debug.Log("SwapSystem: No collider hit - check layer mask and colliders");
-            
             // If we have a selected tile and clicked on empty space, deselect it
             if (selectedTile != null)
             {
-                Debug.Log("SwapSystem: Clicked on empty space, deselecting current tile");
                 ResetTileScale(selectedTile.transform);
                 selectedTile = null;
                 selectedPosition = Vector2Int.zero;
@@ -230,26 +161,19 @@ public class SwapSystem : MonoBehaviour
     
     private IEnumerator PerformSwap(Vector2Int posA, Vector2Int posB)
     {
-        Debug.Log($"SwapSystem: PerformSwap started - posA: {posA}, posB: {posB}");
-        
         if (isSwapping) 
         {
-            Debug.Log("SwapSystem: Already swapping, aborting");
             yield break;
         }
         
         isSwapping = true;
-        Debug.Log("SwapSystem: Swap in progress");
         
         // Get the tiles at both positions
         TileBase tileA = gridController.GetTileAt(posA);
         TileBase tileB = gridController.GetTileAt(posB);
         
-        Debug.Log($"SwapSystem: Tiles found - tileA: {tileA != null}, tileB: {tileB != null}");
-        
         if (tileA == null || tileB == null)
         {
-            Debug.LogError($"SwapSystem: Cannot find tiles - tileA: {tileA != null}, tileB: {tileB != null}");
             isSwapping = false;
             yield break;
         }
@@ -258,33 +182,32 @@ public class SwapSystem : MonoBehaviour
         Vector3 worldPosA = gridController.GridToWorldPosition(posA);
         Vector3 worldPosB = gridController.GridToWorldPosition(posB);
         
-        Debug.Log($"SwapSystem: World positions - posA: {worldPosA}, posB: {worldPosB}");
+        // Animate the swap (temporarily disable colliders to prevent extra hits)
+        var colA = tileA.GetComponent<Collider2D>();
+        var colB = tileB.GetComponent<Collider2D>();
+        bool colAE = colA != null && colA.enabled;
+        bool colBE = colB != null && colB.enabled;
+        if (colA != null) colA.enabled = false;
+        if (colB != null) colB.enabled = false;
         
         // Animate the swap
-        Debug.Log("SwapSystem: Starting swap animation");
         yield return StartCoroutine(AnimateSwap(tileA, worldPosB, tileB, worldPosA));
         
         // Update grid state
-        Debug.Log("SwapSystem: Updating grid state");
         UpdateGridAfterSwap(posA, posB, tileA, tileB);
         
         // Use a swap (optional for testing)
         if (economyManager != null)
         {
-            Debug.Log($"SwapSystem: Using swap, remaining: {economyManager.GetSwapsLeft() - 1}");
             economyManager.UseSwap();
-        }
-        else
-        {
-            Debug.Log("SwapSystem: No economy manager - swap used without tracking");
         }
         
         // Notify GridController about the swap
-        Debug.Log("SwapSystem: Notifying GridController");
         gridController.OnPlayerSwapCompleted(posA, posB);
         
+        if (colA != null) colA.enabled = colAE;
+        if (colB != null) colB.enabled = colBE;
         isSwapping = false;
-        Debug.Log("SwapSystem: Swap completed");
     }
     
     private IEnumerator AnimateSwap(TileBase tileA, Vector3 targetPosA, TileBase tileB, Vector3 targetPosB)

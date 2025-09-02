@@ -191,6 +191,9 @@ public class GridFiller : MonoBehaviour
                     resourceComponent.SetDefinition(def);
                 }
                 
+                // Disable collider during animation to avoid input hits at transient positions
+                var col = tile.GetComponent<Collider2D>();
+                if (col != null) col.enabled = false;
                 // Animate falling first
                 if (tile == null) { onComplete?.Invoke(); yield break; }
                 yield return StartCoroutine(AnimateTileFall(tile, targetPosition));
@@ -208,10 +211,11 @@ public class GridFiller : MonoBehaviour
                     }
                 }
                 gridController.AddTileToGrid(pos, resourceComponent);
+                if (col != null) col.enabled = true;
             }
             else
             {
-                Debug.LogError($"GridFiller: Tile prefab {tilePrefab.name} has no Resource component!");
+                
                 Destroy(tile);
             }
         }
@@ -345,14 +349,9 @@ public class GridFiller : MonoBehaviour
                 {
                     Vector2Int to = new Vector2Int(x, writeY);
                     var cell = gridController.boardState.GetTile(from);
-                    if (cell != null)
-                    {
-                        gridController.MoveTileMapping(from, to, tile, cell.tileId, cell.category, cell.level);
-                    }
-                    tile.UpdatePosition(to);
                     Vector3 target = gridController.GridToWorldPosition(to);
                     pendingMoves++;
-                    StartCoroutine(AnimateAndCount(tile.gameObject, target, () => { pendingMoves--; }));
+                    StartCoroutine(AnimateMoveAndFinalize(tile, from, to, cell, target, () => { pendingMoves--; }));
                 }
                 writeY++;
             }
@@ -394,6 +393,26 @@ public class GridFiller : MonoBehaviour
     {
         if (tile == null) { onDone?.Invoke(); yield break; }
         yield return StartCoroutine(AnimateTileFall(tile, target));
+        onDone?.Invoke();
+    }
+
+    private IEnumerator AnimateMoveAndFinalize(TileBase tile, Vector2Int from, Vector2Int to, CellData cell, Vector3 target, System.Action onDone)
+    {
+        if (tile == null) { onDone?.Invoke(); yield break; }
+        GameObject go = tile.gameObject;
+        if (go == null) { onDone?.Invoke(); yield break; }
+        // Disable collider during animation to avoid input on transient positions
+        var col = go.GetComponent<Collider2D>();
+        bool hadCol = col != null && col.enabled;
+        if (col != null) col.enabled = false;
+        yield return StartCoroutine(AnimateTileFall(go, target));
+        // After animation completes, update logical mapping and tile position
+        if (cell != null)
+        {
+            gridController.MoveTileMapping(from, to, tile, cell.tileId, cell.category, cell.level);
+        }
+        tile.UpdatePosition(to);
+        if (col != null) col.enabled = hadCol;
         onDone?.Invoke();
     }
 }
