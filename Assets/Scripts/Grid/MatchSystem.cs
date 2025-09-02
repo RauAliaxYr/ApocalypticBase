@@ -7,6 +7,9 @@ using UnityEngine;
         [Header("Match Settings")]
         public int minMatchCount = 3;
         public float matchCheckDelay = 0.1f;
+        [Tooltip("Duration of tiles moving toward the spawn position on match")] 
+        public float matchMoveDuration = 0.2f;
+        public AnimationCurve matchMoveCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         
         private Dictionary<string, TileDefinition> tileIdToDef = new Dictionary<string, TileDefinition>();
         // towerIdToDef removed - using evolution-based system
@@ -127,7 +130,7 @@ using UnityEngine;
             
             foreach (MatchData match in allMatches)
             {
-                ProcessMatch(match);
+                yield return ProcessMatchCoroutine(match);
             }
             
             // Check for cascading matches
@@ -321,6 +324,89 @@ using UnityEngine;
             
             // Clear last swap markers after processing
             gridController.ClearLastSwap();
+        }
+
+        private IEnumerator ProcessMatchCoroutine(MatchData match)
+        {
+            // Determine spawn position consistent with ProcessMatch logic
+            Vector2Int anyPos = match.positions[0];
+            var cell = boardState.GetTile(anyPos);
+            if (cell == null)
+            {
+                yield break;
+            }
+
+            Vector2Int spawnPos;
+            if (cell.category == TileCategory.Resource)
+            {
+                spawnPos = ChooseTowerSpawnPosition(match);
+            }
+            else if (cell.category == TileCategory.Tower)
+            {
+                spawnPos = GetCenterPosition(match.positions);
+            }
+            else
+            {
+                spawnPos = GetCenterPosition(match.positions);
+            }
+
+            // Animate all matched tiles moving toward the spawn position
+            if (gridController != null)
+            {
+                yield return AnimateTilesToTarget(match.positions, gridController.GridToWorldPosition(spawnPos));
+            }
+
+            // After animation completes, run the existing processing (transform/upgrade and removals)
+            ProcessMatch(match);
+        }
+
+        private IEnumerator AnimateTilesToTarget(List<Vector2Int> positions, Vector3 targetWorld)
+        {
+            // Collect transforms and start positions
+            List<Transform> transforms = new List<Transform>(positions.Count);
+            List<Vector3> startPositions = new List<Vector3>(positions.Count);
+
+            foreach (var pos in positions)
+            {
+                var tile = gridController != null ? gridController.GetTileAt(pos) : null;
+                if (tile != null)
+                {
+                    transforms.Add(tile.transform);
+                    startPositions.Add(tile.transform.position);
+                }
+            }
+
+            if (transforms.Count == 0)
+            {
+                yield break;
+            }
+
+            float elapsed = 0f;
+            float duration = Mathf.Max(0.01f, matchMoveDuration);
+
+            while (elapsed < duration)
+            {
+                float t = Mathf.Clamp01(elapsed / duration);
+                float eased = matchMoveCurve != null ? matchMoveCurve.Evaluate(t) : t;
+
+                for (int i = 0; i < transforms.Count; i++)
+                {
+                    var tr = transforms[i];
+                    if (tr == null) continue; // Was destroyed mid-animation
+                    tr.position = Vector3.Lerp(startPositions[i], targetWorld, eased);
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            // Snap to target (in case of tiny drift)
+            for (int i = 0; i < transforms.Count; i++)
+            {
+                var tr = transforms[i];
+                if (tr == null) continue;
+                tr.position = targetWorld;
+            }
         }
         
         private void ProcessResourceMatch(MatchData match)
